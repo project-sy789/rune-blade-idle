@@ -4,10 +4,12 @@
 import { useEffect, useRef } from 'react'
 import { useGameStore }      from '../store/gameStore'
 
+const APP_BASE_URL = import.meta.env.BASE_URL || '/'
+
 async function registerSW(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return null
   try {
-    return await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    return await navigator.serviceWorker.register(`${APP_BASE_URL}sw.js`, { scope: APP_BASE_URL })
   } catch { return null }
 }
 
@@ -30,7 +32,7 @@ export function usePushNotifications() {
     if (document.visibilityState === 'hidden' && regRef.current) {
       regRef.current.showNotification('☠️ Boss ปรากฏ!', {
         body: latest.text,
-        icon: '/icon-192.png',
+        icon: `${APP_BASE_URL}icon.svg`,
         tag:  'boss-spawn',
       })
     }

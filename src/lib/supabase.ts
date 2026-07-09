@@ -3,8 +3,10 @@
 // ============================================================
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://hmfhdgrezidwkbzxsvtp.supabase.co'
-const SUPABASE_KEY = 'sb_publishable_1yV0SBQMaR5RgAm7-E5Y7Q_GZPA7Jp2'
+export const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL || 'https://hmfhdgrezidwkbzxsvtp.supabase.co'
+export const SUPABASE_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_1yV0SBQMaR5RgAm7-E5Y7Q_GZPA7Jp2'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   realtime: { params: { eventsPerSecond: 10 } },

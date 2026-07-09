@@ -213,6 +213,8 @@ function rewardLabel(reward: { type: string; amount?: number }): string {
   return '🎁 รางวัลพิเศษ'
 }
 
+export const GAME_SAVE_STORAGE_KEY = 'rune-blade-save-v4'
+
 // ─── Store ───────────────────────────────────────────────────
 export const useGameStore = create<GameState>()(
   persist(
@@ -558,7 +560,7 @@ export const useGameStore = create<GameState>()(
       },
     }),
     {
-      name: 'rune-blade-save-v4',
+      name: GAME_SAVE_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({
         player: s.player, equipment: s.equipment, inventory: s.inventory,

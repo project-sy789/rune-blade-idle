@@ -2,10 +2,36 @@
 // useCloudSync.ts — auto cloud save + offline restore
 // ============================================================
 import { useEffect, useRef } from 'react'
-import { useGameStore }      from '../store/gameStore'
-import { supabase, getDeviceId, getDisplayName } from '../lib/supabase'
+import { GAME_SAVE_STORAGE_KEY, useGameStore } from '../store/gameStore'
+import { SUPABASE_KEY, SUPABASE_URL, supabase, getDeviceId, getDisplayName } from '../lib/supabase'
 
 const SYNC_INTERVAL_MS = 30_000   // sync ทุก 30 วินาที
+
+function buildCloudPayload() {
+  const deviceId    = getDeviceId()
+  const displayName = getDisplayName()
+  const state = useGameStore.getState()
+  const saveData = {
+    player:         state.player,
+    equipment:      state.equipment,
+    inventory:      state.inventory,
+    currentStageId: state.currentStageId,
+    killsSinceBoss: state.killsSinceBoss,
+    lastLogin:      state.lastLogin,
+  }
+
+  return {
+    device_id:    deviceId,
+    display_name: displayName,
+    level:        state.player.level,
+    gold:         state.player.gold,
+    total_kills:  state.player.totalKills,
+    class_id:     state.player.classId,
+    stage_id:     state.currentStageId,
+    save_data:    saveData,
+    updated_at:   new Date().toISOString(),
+  }
+}
 
 export function useCloudSync() {
   const player         = useGameStore(s => s.player)
@@ -35,9 +61,8 @@ export function useCloudSync() {
       if (cloudLevel > localLevel && data.save_data) {
         // rehydrate ผ่าน Zustand persist storage key
         try {
-          const saveKey   = 'rune-blade-save-v3'
           const cloudSave = data.save_data as Record<string, unknown>
-          localStorage.setItem(saveKey, JSON.stringify({ state: cloudSave, version: 0 }))
+          localStorage.setItem(GAME_SAVE_STORAGE_KEY, JSON.stringify({ state: cloudSave, version: 0 }))
           window.location.reload()
         } catch { /* ignore */ }
       }
@@ -48,29 +73,8 @@ export function useCloudSync() {
   // ── Periodic push ────────────────────────────────────────
   useEffect(() => {
     const push = async () => {
-      const deviceId   = getDeviceId()
-      const displayName = getDisplayName()
-      const state = useGameStore.getState()
-      const saveData = {
-        player:         state.player,
-        equipment:      state.equipment,
-        inventory:      state.inventory,
-        currentStageId: state.currentStageId,
-        killsSinceBoss: state.killsSinceBoss,
-        lastLogin:      state.lastLogin,
-      }
       await supabase.from('players').upsert(
-        {
-          device_id:    deviceId,
-          display_name: displayName,
-          level:        state.player.level,
-          gold:         state.player.gold,
-          total_kills:  state.player.totalKills,
-          class_id:     state.player.classId,
-          stage_id:     state.currentStageId,
-          save_data:    saveData,
-          updated_at:   new Date().toISOString(),
-        },
+        buildCloudPayload(),
         { onConflict: 'device_id' },
       )
     }
@@ -85,22 +89,17 @@ export function useCloudSync() {
   // push ตอน unload
   useEffect(() => {
     const handle = () => {
-      const deviceId    = getDeviceId()
-      const displayName = getDisplayName()
-      const state = useGameStore.getState()
-      navigator.sendBeacon(
-        `https://hmfhdgrezidwkbzxsvtp.supabase.co/rest/v1/players`,
-        JSON.stringify({
-          device_id:    deviceId,
-          display_name: displayName,
-          level:        state.player.level,
-          gold:         state.player.gold,
-          total_kills:  state.player.totalKills,
-          class_id:     state.player.classId,
-          stage_id:     state.currentStageId,
-          updated_at:   new Date().toISOString(),
-        }),
-      )
+      void fetch(`${SUPABASE_URL}/rest/v1/players?on_conflict=device_id`, {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+          apikey: SUPABASE_KEY,
+          authorization: `Bearer ${SUPABASE_KEY}`,
+          'content-type': 'application/json',
+          prefer: 'resolution=merge-duplicates',
+        },
+        body: JSON.stringify(buildCloudPayload()),
+      }).catch(() => {})
     }
     window.addEventListener('pagehide', handle)
     return () => window.removeEventListener('pagehide', handle)
