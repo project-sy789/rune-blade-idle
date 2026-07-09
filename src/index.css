@@ -304,3 +304,61 @@ html, body, #root {
 .sprite-idle { animation: spriteIdle 1.1s ease-in-out infinite; }
 .sprite-attack { animation: spriteAttack 0.55s ease-in-out infinite; }
 .sprite-hurt { animation: spriteHurt 0.35s ease-in-out infinite; }
+
+
+/* ── Ragnarok-inspired isometric field upgrade ──────────────── */
+.rune-map-prontera { --tile-a: rgba(74, 222, 128, 0.22); --tile-b: rgba(132, 204, 22, 0.15); --path: rgba(180, 139, 82, 0.34); --water: rgba(56,189,248,0.16); --cliff: rgba(87, 63, 35, 0.36); }
+.rune-map-forest { --tile-a: rgba(20, 184, 166, 0.2); --tile-b: rgba(22, 163, 74, 0.18); --path: rgba(92, 76, 47, 0.32); --water: rgba(34, 211, 238, 0.18); --cliff: rgba(41, 77, 44, 0.42); }
+.rune-map-coast { --tile-a: rgba(14, 165, 233, 0.2); --tile-b: rgba(250, 204, 21, 0.15); --path: rgba(234, 179, 8, 0.26); --water: rgba(56, 189, 248, 0.38); --cliff: rgba(120, 113, 108, 0.36); }
+.rune-map-geffen { --tile-a: rgba(139, 92, 246, 0.2); --tile-b: rgba(79, 70, 229, 0.16); --path: rgba(100, 116, 139, 0.3); --water: rgba(168, 85, 247, 0.22); --cliff: rgba(49, 46, 129, 0.4); }
+.rune-map-desert { --tile-a: rgba(251, 191, 36, 0.2); --tile-b: rgba(217, 119, 6, 0.16); --path: rgba(202, 138, 4, 0.34); --water: rgba(125, 211, 252, 0.1); --cliff: rgba(120, 53, 15, 0.4); }
+.rune-map-clock { --tile-a: rgba(168, 162, 158, 0.18); --tile-b: rgba(180, 83, 9, 0.13); --path: rgba(113, 63, 18, 0.32); --water: rgba(251, 191, 36, 0.12); --cliff: rgba(68, 64, 60, 0.44); }
+.rune-map-ruins { --tile-a: rgba(148, 163, 184, 0.15); --tile-b: rgba(88, 28, 135, 0.13); --path: rgba(75, 85, 99, 0.32); --water: rgba(91, 33, 182, 0.16); --cliff: rgba(31, 41, 55, 0.48); }
+.rune-map-orc { --tile-a: rgba(127, 29, 29, 0.18); --tile-b: rgba(132, 204, 22, 0.12); --path: rgba(120, 53, 15, 0.36); --water: rgba(239, 68, 68, 0.1); --cliff: rgba(69, 26, 3, 0.46); }
+.rune-map-turtle { --tile-a: rgba(16, 185, 129, 0.2); --tile-b: rgba(101, 163, 13, 0.15); --path: rgba(163, 230, 53, 0.18); --water: rgba(34, 211, 238, 0.32); --cliff: rgba(63, 98, 18, 0.38); }
+.rune-map-niflheim { --tile-a: rgba(88, 28, 135, 0.2); --tile-b: rgba(15, 23, 42, 0.26); --path: rgba(76, 29, 149, 0.28); --water: rgba(147, 51, 234, 0.16); --cliff: rgba(3, 7, 18, 0.58); }
+.rune-sky-glow {
+  position: absolute; inset: -20%; opacity: 0.75;
+  background: radial-gradient(circle at 26% 18%, rgba(255,255,255,0.12), transparent 20%), radial-gradient(circle at 76% 76%, rgba(255,255,255,0.08), transparent 24%);
+}
+.rune-isometric-tiles {
+  position: absolute; inset: -18% -16%; opacity: 0.82;
+  transform: rotateX(60deg) rotateZ(45deg) scale(1.22); transform-origin: center;
+  background-image: linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px), linear-gradient(rgba(0,0,0,0.18) 1px, transparent 1px), linear-gradient(135deg, var(--tile-a), var(--tile-b));
+  background-size: 34px 34px, 34px 34px, 100% 100%; filter: saturate(1.18) contrast(1.05);
+}
+.rune-tile-highlights {
+  position: absolute; inset: 0; opacity: 0.55;
+  background: repeating-linear-gradient(135deg, transparent 0 24px, rgba(255,255,255,0.045) 24px 25px, transparent 25px 48px), radial-gradient(ellipse at 50% 53%, rgba(255,255,255,0.12), transparent 46%);
+}
+.rune-cliff {
+  position: absolute; z-index: 2; border-radius: 28% 72% 36% 64%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06), transparent 24%), repeating-linear-gradient(90deg, rgba(0,0,0,0.12) 0 6px, transparent 6px 14px), var(--cliff, rgba(87, 63, 35, 0.36));
+  border: 1px solid rgba(255,255,255,0.06); box-shadow: inset 0 -10px 18px rgba(0,0,0,0.22), 0 10px 18px rgba(0,0,0,0.18);
+}
+.rune-cliff-a { left: -7%; top: 6%; width: 33%; height: 18%; transform: rotate(-12deg); }
+.rune-cliff-b { right: -8%; bottom: 4%; width: 36%; height: 19%; transform: rotate(14deg); }
+.rune-portal {
+  position: absolute; z-index: 6; right: 9%; top: 10%; width: 34px; height: 44px; border-radius: 999px 999px 40% 40%;
+  background: radial-gradient(circle, rgba(216,180,254,0.55), rgba(124,58,237,0.2) 46%, transparent 70%);
+  border: 1px solid rgba(216,180,254,0.35); box-shadow: 0 0 18px rgba(168,85,247,0.38), inset 0 0 14px rgba(255,255,255,0.12);
+  animation: portalPulse 2.4s ease-in-out infinite;
+}
+@keyframes portalPulse { 50% { transform: scale(1.08); filter: brightness(1.22); } }
+.rune-minimap {
+  position: absolute; z-index: 30; right: 8px; bottom: 8px; width: 46px; height: 34px; border-radius: 10px;
+  background: rgba(0,0,0,0.36); border: 1px solid rgba(255,255,255,0.13); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+.rune-minimap span { position: absolute; width: 4px; height: 4px; border-radius: 999px; }
+.mini-player { left: 21px; top: 16px; background: #60a5fa; box-shadow: 0 0 6px #60a5fa; }
+.mini-mob { background: #f87171; box-shadow: 0 0 4px #f87171; }
+.mini-mob-a { left: 10px; top: 9px; }
+.mini-mob-b { right: 8px; top: 11px; }
+.mini-mob-c { left: 15px; bottom: 7px; }
+.rune-isometric-tiles + .rune-tile-highlights + .field-grid { opacity: 0.06; }
+.rune-map-prontera .field-path, .rune-map-forest .field-path, .rune-map-coast .field-path, .rune-map-geffen .field-path, .rune-map-desert .field-path, .rune-map-clock .field-path, .rune-map-ruins .field-path, .rune-map-orc .field-path, .rune-map-turtle .field-path, .rune-map-niflheim .field-path { background: var(--path); }
+.rune-map-prontera .field-river, .rune-map-forest .field-river, .rune-map-coast .field-river, .rune-map-geffen .field-river, .rune-map-desert .field-river, .rune-map-clock .field-river, .rune-map-ruins .field-river, .rune-map-orc .field-river, .rune-map-turtle .field-river, .rune-map-niflheim .field-river { background: linear-gradient(90deg, transparent, var(--water), rgba(125,211,252,0.1), transparent); }
+.rune-map-coast .field-river, .rune-map-turtle .field-river { width: 26%; opacity: 0.78; }
+.rune-map-desert .field-river, .rune-map-orc .field-river { opacity: 0.24; }
+.hero-route { border-color: rgba(255,255,255,0.26); }
+.field-prop { filter: drop-shadow(0 7px 4px rgba(0,0,0,0.5)); }

@@ -20,19 +20,31 @@ const SWARM_DELAYS = ['-0.1s', '-0.8s', '-1.2s', '-0.4s', '-1.7s', '-0.6s', '-1.
 
 const STAGE_PROPS: Record<string, Array<{ icon: string; x: number; y: number; size?: number; opacity?: number }>> = {
   prontera: [
-    { icon: '🌳', x: 11, y: 18, size: 24 }, { icon: '🌲', x: 84, y: 17, size: 22 },
+    { icon: '🏰', x: 10, y: 14, size: 22 }, { icon: '🌳', x: 20, y: 23, size: 24 }, { icon: '🌲', x: 84, y: 17, size: 22 },
     { icon: '🌾', x: 18, y: 54 }, { icon: '🌼', x: 40, y: 73 }, { icon: '🪨', x: 86, y: 78 },
-    { icon: '🏕️', x: 63, y: 21, size: 20, opacity: 0.75 }, { icon: '✨', x: 51, y: 84, opacity: 0.65 },
+    { icon: '🧙‍♂️', x: 62, y: 24, size: 19, opacity: 0.9 }, { icon: '✨', x: 51, y: 84, opacity: 0.65 },
   ],
   payon_forest: [
-    { icon: '🌲', x: 10, y: 16, size: 25 }, { icon: '🌳', x: 27, y: 25, size: 24 },
+    { icon: '⛩️', x: 11, y: 16, size: 23 }, { icon: '🌲', x: 24, y: 24, size: 26 }, { icon: '🌳', x: 35, y: 33, size: 24 },
     { icon: '🍄', x: 73, y: 30 }, { icon: '🌿', x: 89, y: 62 }, { icon: '🪵', x: 18, y: 79 },
     { icon: '💧', x: 58, y: 78, opacity: 0.75 }, { icon: '🪨', x: 42, y: 15 },
+  ],
+  izlude_coast: [
+    { icon: '⚓', x: 14, y: 18, size: 23 }, { icon: '⛵', x: 82, y: 22, size: 24 }, { icon: '🐚', x: 22, y: 72 },
+    { icon: '🌴', x: 76, y: 70, size: 24 }, { icon: '🪨', x: 45, y: 18 }, { icon: '💧', x: 55, y: 82, opacity: 0.85 },
+  ],
+  geffen_field: [
+    { icon: '🔮', x: 13, y: 18, size: 23 }, { icon: '🧪', x: 78, y: 26 }, { icon: '✨', x: 42, y: 22, opacity: 0.8 },
+    { icon: '📜', x: 22, y: 76 }, { icon: '🌳', x: 86, y: 72, size: 22 }, { icon: '🪨', x: 58, y: 80 },
   ],
   morroc: [
     { icon: '🌵', x: 12, y: 20, size: 25 }, { icon: '🏺', x: 76, y: 22 },
     { icon: '🦂', x: 88, y: 50, opacity: 0.75 }, { icon: '🪨', x: 25, y: 78 }, { icon: '🔥', x: 56, y: 16, opacity: 0.7 },
     { icon: '⛺', x: 70, y: 76, size: 20, opacity: 0.8 },
+  ],
+  aldebaran_clock: [
+    { icon: '🕰️', x: 13, y: 17, size: 25 }, { icon: '⚙️', x: 78, y: 22 }, { icon: '🧭', x: 42, y: 18 },
+    { icon: '🪙', x: 22, y: 78, opacity: 0.75 }, { icon: '🕯️', x: 82, y: 74 }, { icon: '🪨', x: 55, y: 82 },
   ],
   glast_heim: [
     { icon: '🪦', x: 13, y: 22, size: 22 }, { icon: '🏚️', x: 80, y: 20, size: 24 },
@@ -44,6 +56,27 @@ const STAGE_PROPS: Record<string, Array<{ icon: string; x: number; y: number; si
     { icon: '🪓', x: 87, y: 62 }, { icon: '🪵', x: 27, y: 78 }, { icon: '🚩', x: 53, y: 17 },
     { icon: '🪨', x: 70, y: 80 },
   ],
+  turtle_island: [
+    { icon: '🐢', x: 14, y: 18, size: 23 }, { icon: '🌴', x: 82, y: 22, size: 25 }, { icon: '🗿', x: 43, y: 19 },
+    { icon: '🌊', x: 20, y: 80 }, { icon: '🥥', x: 68, y: 76 }, { icon: '🪨', x: 88, y: 70 },
+  ],
+  niflheim_gate: [
+    { icon: '🌑', x: 12, y: 18, size: 24 }, { icon: '🕯️', x: 75, y: 20 }, { icon: '🪦', x: 86, y: 68 },
+    { icon: '💀', x: 22, y: 78 }, { icon: '🕸️', x: 55, y: 78 }, { icon: '✨', x: 47, y: 22, opacity: 0.7 },
+  ],
+}
+
+const STAGE_MAP_STYLE: Record<string, string> = {
+  prontera: 'rune-map-prontera',
+  payon_forest: 'rune-map-forest',
+  izlude_coast: 'rune-map-coast',
+  geffen_field: 'rune-map-geffen',
+  morroc: 'rune-map-desert',
+  aldebaran_clock: 'rune-map-clock',
+  glast_heim: 'rune-map-ruins',
+  orc_village: 'rune-map-orc',
+  turtle_island: 'rune-map-turtle',
+  niflheim_gate: 'rune-map-niflheim',
 }
 
 const GROUP_LABELS = ['เป้าหมาย', 'ฝูงเหนือซ้าย', 'ฝูงเหนือขวา', 'ฝูงใต้ซ้าย', 'ฝูงใต้ขวา', 'เฝ้าทางเข้า']
@@ -141,6 +174,7 @@ export function CombatZone() {
   }]
 
   const props = STAGE_PROPS[currentStageId] ?? STAGE_PROPS.prontera
+  const mapStyle = STAGE_MAP_STYLE[currentStageId] ?? STAGE_MAP_STYLE.prontera
   const mobGroups = Array.from(new Set(swarm.map(mob => mob.group).filter(group => group > 0))).length
 
   const stageTone =
@@ -163,13 +197,25 @@ export function CombatZone() {
         </span>
       </div>
 
-      <div className={`relative z-10 flex-1 min-h-[190px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${stageTone} shadow-2xl shadow-black/30`}> 
+      <div className={`relative z-10 flex-1 min-h-[190px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${stageTone} ${mapStyle} shadow-2xl shadow-black/30`}> 
+        <div className="rune-sky-glow" />
         <div className="field-biome" />
+        <div className="rune-isometric-tiles" />
+        <div className="rune-tile-highlights" />
         <div className="field-grid" />
         <div className="field-path field-path-a" />
         <div className="field-path field-path-b" />
         <div className="field-path field-path-c" />
         <div className="field-river" />
+        <div className="rune-cliff rune-cliff-a" />
+        <div className="rune-cliff rune-cliff-b" />
+        <div className="rune-portal" />
+        <div className="rune-minimap">
+          <span className="mini-player" />
+          <span className="mini-mob mini-mob-a" />
+          <span className="mini-mob mini-mob-b" />
+          <span className="mini-mob mini-mob-c" />
+        </div>
         <div className="field-vignette" />
 
         {[1, 2, 3, 4].map(group => (
