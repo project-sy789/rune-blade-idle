@@ -47,6 +47,14 @@ export interface Monster {
   isBoss:    boolean
 }
 
+export interface FieldMob extends Monster {
+  uid:   string
+  x:     number
+  y:     number
+  scale: number
+  slot:  number
+}
+
 export type LogType = 'attack'|'receive'|'kill'|'levelup'|'system'|'drop'|'enhance'|'skill'|'boss'|'achievement'
 
 export interface LogEntry { id: number; text: string; type: LogType }
@@ -59,6 +67,7 @@ export interface GameState {
   equipment:        Equipment
   inventory:        InventoryItem[]
   monster:          Monster
+  fieldMobs:        FieldMob[]
   log:              LogEntry[]
   floats:           FloatDamage[]
   lastLogin:        number
@@ -144,6 +153,38 @@ function spawnBoss(stageId: string, playerLevel: number): Monster {
   }
 }
 
+const FIELD_SPAWNS = [
+  { x: 18, y: 26, scale: 0.82 },
+  { x: 76, y: 24, scale: 0.78 },
+  { x: 14, y: 58, scale: 0.9 },
+  { x: 78, y: 60, scale: 0.95 },
+  { x: 50, y: 18, scale: 0.7 },
+  { x: 30, y: 74, scale: 0.72 },
+  { x: 66, y: 76, scale: 0.72 },
+]
+
+function withFieldMeta(monster: Monster, slot: number): FieldMob {
+  const spawn = FIELD_SPAWNS[slot % FIELD_SPAWNS.length]
+  return {
+    ...monster,
+    uid: `${monster.template.id}_${Date.now()}_${slot}_${Math.random().toString(36).slice(2, 6)}`,
+    slot,
+    x: spawn.x,
+    y: spawn.y,
+    scale: monster.isBoss ? spawn.scale * 1.25 : spawn.scale,
+  }
+}
+
+function spawnFieldMob(stageId: string, playerLevel: number, slot: number): FieldMob {
+  return withFieldMeta({ ...spawnMonsterInStage(stageId, playerLevel), isBoss: false }, slot)
+}
+
+function spawnField(stageId: string, playerLevel: number, active?: Monster): FieldMob[] {
+  return FIELD_SPAWNS.map((_, slot) =>
+    slot === 0 && active ? withFieldMeta(active, slot) : spawnFieldMob(stageId, playerLevel, slot)
+  )
+}
+
 function buildAchievementContext(
   s: GameState, inGuild: boolean, offlineSec: number
 ): AchievementContext {
@@ -179,6 +220,7 @@ export const useGameStore = create<GameState>()(
       player: { ...GAME_CONFIG.INITIAL_PLAYER, classId: null, totalKills: 0, bossKills: 0 },
       equipment: {}, inventory: [],
       monster: { ...spawnMonsterInStage('prontera', 1), isBoss: false },
+      fieldMobs: spawnField('prontera', 1, { ...spawnMonsterInStage('prontera', 1), isBoss: false }),
       log: [], floats: [],
       lastLogin: Date.now(),
       currentStageId: 'prontera',
@@ -246,7 +288,13 @@ export const useGameStore = create<GameState>()(
         const s = get()
         const stage = STAGES.find(st => st.id === stageId)
         if (!stage || stage.minLevel > s.player.level) return
-        set({ currentStageId: stageId, monster: { ...spawnMonsterInStage(stageId, s.player.level), isBoss: false }, killsSinceBoss: 0 })
+        const active = { ...spawnMonsterInStage(stageId, s.player.level), isBoss: false }
+        set({
+          currentStageId: stageId,
+          monster: active,
+          fieldMobs: spawnField(stageId, s.player.level, active),
+          killsSinceBoss: 0,
+        })
       },
 
       allocateStat: (stat) =>
@@ -313,47 +361,62 @@ export const useGameStore = create<GameState>()(
         const cls = getCharClass(s.player.classId)
         if (!cls || Date.now() < s.skillCooldownEnd) return
         set(sv => {
-          let p = { ...sv.player }, m = { ...sv.monster }
+          let p = { ...sv.player }
+          let fieldMobs = (sv.fieldMobs?.length ? [...sv.fieldMobs] : spawnField(sv.currentStageId, sv.player.level, sv.monster))
+          let m = { ...fieldMobs[0] } as FieldMob
+          let inv = [...sv.inventory]
+          let ks = sv.killsSinceBoss
           const floats: FloatDamage[] = []
           let newLog = [...sv.log]
           const push = (text: string, type: LogType) => {
             newLog = [{ id: _logId++, text, type }, ...newLog].slice(0, GAME_CONFIG.MAX_LOG_LINES)
           }
+
           const skillDmg = Math.floor(getAtk(p, sv.equipment) * cls.skill.dmgMultiplier)
           m.currentHp = Math.max(0, m.currentHp - skillDmg)
+          fieldMobs[0] = m
           push(T.skillUsed(cls.skill.name, skillDmg, m.template.name), 'skill')
           floats.push({ id: _floatId++, value: skillDmg, x: 55 + Math.random() * 10, y: 20 + Math.random() * 10, isCrit: true, isSkill: true })
 
           if (m.currentHp <= 0) {
             const stage = STAGES.find(st => st.id === sv.currentStageId) ?? STAGES[0]
-            const gm    = 1 + stage.goldBonus / 100 + (cls.passive.goldBonus / 100)
-            const em    = 1 + stage.expBonus  / 100 + (cls.passive.expBonus  / 100)
-            const eg    = Math.floor(m.template.expReward  * em)
-            const gg    = Math.floor(m.template.goldReward * gm)
+            const gm = 1 + stage.goldBonus / 100 + (cls.passive.goldBonus / 100)
+            const em = 1 + stage.expBonus / 100 + (cls.passive.expBonus / 100)
+            const eg = Math.floor(m.template.expReward * em)
+            const gg = Math.floor(m.template.goldReward * gm)
             p.exp += eg; p.gold += gg; p.totalKills++
             if (m.isBoss) p.bossKills++
-            push(T.monsterDefeated(m.template.name), 'kill')
+            push(T.monsterDefeated(m.template.name), m.isBoss ? 'boss' : 'kill')
             push(T.gainExp(eg), 'system'); push(T.gainGold(gg), 'system')
-            const drops = rollDrops(m.template)
-            let inv = [...sv.inventory]
-            for (const d of drops) { const t = ITEM_TEMPLATES.find(x => x.id === d.templateId); if (t) { inv.push(d); push(T.itemDrop(t.name), 'drop') } }
+
+            for (const d of rollDrops(m.template)) {
+              const t = ITEM_TEMPLATES.find(x => x.id === d.templateId)
+              if (t) { inv.push(d); push(T.itemDrop(t.name), 'drop') }
+            }
             while (p.exp >= GAME_CONFIG.expToNextLevel(p.level)) {
-              p.exp -= GAME_CONFIG.expToNextLevel(p.level); p.level++; p.statPoints += GAME_CONFIG.STAT_POINTS_PER_LEVEL
+              p.exp -= GAME_CONFIG.expToNextLevel(p.level)
+              p.level++; p.statPoints += GAME_CONFIG.STAT_POINTS_PER_LEVEL
               p.baseHp += 15; p.baseAtk += 3; p.baseDef += 1; p.currentHp = getMaxHp(p, sv.equipment)
               push(T.levelUp(p.level), 'levelup'); push(T.gotStatPoints(GAME_CONFIG.STAT_POINTS_PER_LEVEL), 'system')
             }
+
+            if (!m.isBoss) ks++; else ks = 0
             const bossT = getBossForLevel(p.level)
-            let ks = sv.killsSinceBoss
-            if (!m.isBoss) ks++
-            else ks = 0
-            let newM: Monster
             if (ks >= bossT.killsRequired && !m.isBoss) {
-              newM = spawnBoss(sv.currentStageId, p.level); push(T.bossAppears(newM.template.name), 'boss'); ks = 0
-            } else { newM = { ...spawnMonsterInStage(sv.currentStageId, p.level), isBoss: false }; push(T.newMonster, 'system') }
+              const boss = spawnBoss(sv.currentStageId, p.level)
+              m = withFieldMeta(boss, 0)
+              fieldMobs[0] = m
+              push(T.bossAppears(m.template.name), 'boss')
+              ks = 0
+            } else {
+              m = spawnFieldMob(sv.currentStageId, p.level, 0)
+              fieldMobs[0] = m
+              push(T.newMonster, 'system')
+            }
             setTimeout(() => get().checkAchievements(), 50)
-            return { player: p, monster: newM, inventory: inv, log: newLog, floats: [...sv.floats, ...floats], killsSinceBoss: ks, logIdCounter: _logId, floatIdCounter: _floatId }
           }
-          return { player: p, monster: m, log: newLog, floats: [...sv.floats, ...floats], logIdCounter: _logId, floatIdCounter: _floatId }
+
+          return { player: p, monster: fieldMobs[0], fieldMobs, inventory: inv, log: newLog, floats: [...sv.floats, ...floats], killsSinceBoss: ks, logIdCounter: _logId, floatIdCounter: _floatId }
         })
         set({ skillCooldownEnd: Date.now() + (getCharClass(get().player.classId)?.skill.cooldownSec ?? 10) * 1000 })
       },
@@ -361,10 +424,15 @@ export const useGameStore = create<GameState>()(
       tickBattle: () => {
         set(s => {
           if (!s.isAutoBattle) return s
-          let p = { ...s.player }, m = { ...s.monster }, inv = [...s.inventory]
+
+          let p = { ...s.player }
+          let fieldMobs = (s.fieldMobs?.length ? [...s.fieldMobs] : spawnField(s.currentStageId, s.player.level, s.monster))
+          let m = { ...fieldMobs[0] } as FieldMob
+          let inv = [...s.inventory]
           const floats: FloatDamage[] = []
           let newLog = [...s.log]
           let ks = s.killsSinceBoss
+
           const push = (text: string, type: LogType) => {
             newLog = [{ id: _logId++, text, type }, ...newLog].slice(0, GAME_CONFIG.MAX_LOG_LINES)
           }
@@ -373,45 +441,86 @@ export const useGameStore = create<GameState>()(
           const gm    = 1 + stage.goldBonus / 100 + (cls?.passive.goldBonus ?? 0) / 100
           const em    = 1 + stage.expBonus  / 100 + (cls?.passive.expBonus  ?? 0) / 100
 
+          // 1) Player auto-targets the nearest/slot-0 mob.
           const { dmg: pd, isCrit } = calcDmg(getAtk(p, s.equipment), m.def, getCrit(p))
           m.currentHp = Math.max(0, m.currentHp - pd)
+          fieldMobs[0] = m
           push(T.playerAttacks(pd, m.template.name), 'attack')
           floats.push({ id: _floatId++, value: pd, x: 58 + Math.random() * 10, y: 30 + Math.random() * 10, isCrit })
 
+          // 2) Resolve target death, rewards, drops, boss spawning, and respawn only that field slot.
           if (m.currentHp <= 0) {
             const eg = Math.floor(m.template.expReward  * em)
             const gg = Math.floor(m.template.goldReward * gm)
             push(T.monsterDefeated(m.template.name), m.isBoss ? 'boss' : 'kill')
             if (m.isBoss) { push(T.bossDefeated(m.template.name), 'boss'); p.bossKills++ }
-            push(T.gainExp(eg), 'system'); push(T.gainGold(gg), 'system')
-            p.exp += eg; p.gold += gg; p.totalKills++
-            if (!m.isBoss) ks++; else ks = 0
+            push(T.gainExp(eg), 'system')
+            push(T.gainGold(gg), 'system')
+            p.exp += eg
+            p.gold += gg
+            p.totalKills++
+            if (!m.isBoss) ks++
+            else ks = 0
+
             const drops = rollDrops(m.template)
-            for (const d of drops) { const t = ITEM_TEMPLATES.find(x => x.id === d.templateId); if (t) { inv.push(d); push(T.itemDrop(t.name), 'drop') } }
-            while (p.exp >= GAME_CONFIG.expToNextLevel(p.level)) {
-              p.exp -= GAME_CONFIG.expToNextLevel(p.level); p.level++; p.statPoints += GAME_CONFIG.STAT_POINTS_PER_LEVEL
-              p.baseHp += 15; p.baseAtk += 3; p.baseDef += 1; p.currentHp = getMaxHp(p, s.equipment)
-              push(T.levelUp(p.level), 'levelup'); push(T.gotStatPoints(GAME_CONFIG.STAT_POINTS_PER_LEVEL), 'system')
+            for (const d of drops) {
+              const t = ITEM_TEMPLATES.find(x => x.id === d.templateId)
+              if (t) { inv.push(d); push(T.itemDrop(t.name), 'drop') }
             }
+
+            while (p.exp >= GAME_CONFIG.expToNextLevel(p.level)) {
+              p.exp -= GAME_CONFIG.expToNextLevel(p.level)
+              p.level++
+              p.statPoints += GAME_CONFIG.STAT_POINTS_PER_LEVEL
+              p.baseHp += 15
+              p.baseAtk += 3
+              p.baseDef += 1
+              p.currentHp = getMaxHp(p, s.equipment)
+              push(T.levelUp(p.level), 'levelup')
+              push(T.gotStatPoints(GAME_CONFIG.STAT_POINTS_PER_LEVEL), 'system')
+            }
+
             const bossT = getBossForLevel(p.level)
-            let newM: Monster
             if (ks >= bossT.killsRequired && !m.isBoss) {
-              newM = spawnBoss(s.currentStageId, p.level); push(T.bossAppears(newM.template.name), 'boss'); ks = 0
-            } else { newM = { ...spawnMonsterInStage(s.currentStageId, p.level), isBoss: false }; push(T.newMonster, 'system') }
+              const boss = spawnBoss(s.currentStageId, p.level)
+              m = withFieldMeta(boss, 0)
+              fieldMobs[0] = m
+              push(T.bossAppears(m.template.name), 'boss')
+              ks = 0
+            } else {
+              m = spawnFieldMob(s.currentStageId, p.level, 0)
+              fieldMobs[0] = m
+              push(T.newMonster, 'system')
+            }
             setTimeout(() => get().checkAchievements(), 50)
-            return { player: p, monster: newM, inventory: inv, log: newLog, floats: [...s.floats, ...floats], killsSinceBoss: ks, logIdCounter: _logId, floatIdCounter: _floatId }
           }
 
-          const { dmg: md } = calcDmg(m.atk, getDef(p, s.equipment), 0)
+          // 3) Every living mob on the field contributes swarm damage.
+          const livingMobs = fieldMobs.filter(mob => mob.currentHp > 0)
+          const swarmAtk = livingMobs.reduce((sum, mob, index) => sum + Math.max(1, Math.floor(mob.atk * (index === 0 ? 1 : 0.35))), 0)
+          const { dmg: md } = calcDmg(swarmAtk, getDef(p, s.equipment), 0)
           p.currentHp = Math.max(0, p.currentHp - md)
-          push(T.monsterAttacks(md, m.template.name), 'receive')
+          push(`💥 มอนสเตอร์ ${livingMobs.length} ตัวรุมโจมตี ${md} ดาเมจ`, 'receive')
+
           if (p.currentHp <= 0) {
             p.currentHp = Math.floor(getMaxHp(p, s.equipment) * 0.5)
             push(T.playerDied, 'system')
-            const newM: Monster = { ...spawnMonsterInStage(s.currentStageId, p.level), isBoss: false }
-            return { player: p, monster: newM, inventory: inv, log: newLog, floats: [...s.floats, ...floats], killsSinceBoss: ks, logIdCounter: _logId, floatIdCounter: _floatId }
+            const freshTarget = { ...spawnMonsterInStage(s.currentStageId, p.level), isBoss: false }
+            fieldMobs = spawnField(s.currentStageId, p.level, freshTarget)
+            m = fieldMobs[0]
           }
-          return { player: p, monster: m, log: newLog, floats: [...s.floats, ...floats], killsSinceBoss: ks, logIdCounter: _logId, floatIdCounter: _floatId }
+
+          return {
+            player: p,
+            monster: fieldMobs[0],
+            fieldMobs,
+            inventory: inv,
+            log: newLog,
+            floats: [...s.floats, ...floats],
+            killsSinceBoss: ks,
+            logIdCounter: _logId,
+            floatIdCounter: _floatId,
+          }
         })
       },
 

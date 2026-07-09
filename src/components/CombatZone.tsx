@@ -1,7 +1,6 @@
 // ============================================================
 // CombatZone.tsx — v6: Field map + multi-monster swarm view
 // ============================================================
-import { useMemo } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { FloatingNumbers } from './FloatingNumbers'
 import { SkillButton } from './SkillButton'
@@ -14,19 +13,10 @@ import {
   itemBonusAtk,
   itemBonusDef,
   itemBonusHp,
-  MONSTERS,
 } from '../constants/gameConfig'
 import { CLASSES, getBossForLevel } from '../constants/classes'
 
-const SWARM_SLOTS = [
-  { x: 18, y: 26, scale: 0.82, delay: '-0.1s' },
-  { x: 76, y: 24, scale: 0.78, delay: '-0.8s' },
-  { x: 14, y: 58, scale: 0.9, delay: '-1.2s' },
-  { x: 78, y: 60, scale: 0.95, delay: '-0.4s' },
-  { x: 50, y: 18, scale: 0.7, delay: '-1.7s' },
-  { x: 30, y: 74, scale: 0.72, delay: '-0.6s' },
-  { x: 66, y: 76, scale: 0.72, delay: '-1.4s' },
-]
+const SWARM_DELAYS = ['-0.1s', '-0.8s', '-1.2s', '-0.4s', '-1.7s', '-0.6s', '-1.4s']
 
 function hpPct(current: number, max: number) {
   return max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0
@@ -78,6 +68,7 @@ function FieldMonster({
 export function CombatZone() {
   const player = useGameStore(s => s.player)
   const monster = useGameStore(s => s.monster)
+  const fieldMobs = useGameStore(s => s.fieldMobs)
   const equipment = useGameStore(s => s.equipment)
   const isAuto = useGameStore(s => s.isAutoBattle)
   const setAuto = useGameStore(s => s.setAutoBattle)
@@ -98,15 +89,14 @@ export function CombatZone() {
   const killsToNext = Math.max(0, bossTemplate.killsRequired - killsSinceBoss)
   const bossProgress = Math.min(100, (killsSinceBoss / bossTemplate.killsRequired) * 100)
 
-  const swarm = useMemo(() => {
-    const pool = MONSTERS.filter(m => stage.monsterIds.includes(m.id))
-    const fallback = pool.length > 0 ? pool : MONSTERS
-    return SWARM_SLOTS.map((slot, index) => ({
-      ...slot,
-      template: index === 0 ? monster.template : fallback[index % fallback.length],
-      active: index === 0,
-    }))
-  }, [stage.monsterIds, monster.template])
+  const swarm = fieldMobs?.length ? fieldMobs : [{
+    ...monster,
+    uid: 'fallback-target',
+    slot: 0,
+    x: 50,
+    y: 30,
+    scale: monster.isBoss ? 1.2 : 0.9,
+  }]
 
   const stageTone =
     currentStageId === 'morroc' ? 'from-amber-950 via-orange-950 to-stone-950'
@@ -144,17 +134,17 @@ export function CombatZone() {
         {/* swarm monsters */}
         {swarm.map((mob, index) => (
           <FieldMonster
-            key={`${mob.template.id}-${index}-${monster.isBoss ? 'boss' : 'mob'}`}
+            key={mob.uid ?? `${mob.template.id}-${index}`}
             id={mob.template.id}
             name={mob.template.name}
-            x={monster.isBoss && index === 0 ? 50 : mob.x}
-            y={monster.isBoss && index === 0 ? 28 : mob.y}
-            scale={monster.isBoss && index === 0 ? 1.15 : mob.scale}
-            delay={mob.delay}
+            x={mob.isBoss && index === 0 ? 50 : mob.x}
+            y={mob.isBoss && index === 0 ? 28 : mob.y}
+            scale={mob.isBoss && index === 0 ? 1.15 : mob.scale}
+            delay={SWARM_DELAYS[index % SWARM_DELAYS.length]}
             active={index === 0}
-            boss={monster.isBoss && index === 0}
-            hp={index === 0 ? monster.currentHp : undefined}
-            maxHp={index === 0 ? monster.maxHp : undefined}
+            boss={mob.isBoss && index === 0}
+            hp={index === 0 ? mob.currentHp : undefined}
+            maxHp={index === 0 ? mob.maxHp : undefined}
           />
         ))}
 
