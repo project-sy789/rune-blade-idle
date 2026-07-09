@@ -1,170 +1,207 @@
 // ============================================================
-// CombatZone.tsx — v5: PixelSprite characters
+// CombatZone.tsx — v6: Field map + multi-monster swarm view
 // ============================================================
-import { useGameStore }    from '../store/gameStore'
+import { useMemo } from 'react'
+import { useGameStore } from '../store/gameStore'
 import { FloatingNumbers } from './FloatingNumbers'
-import { SkillButton }     from './SkillButton'
-import { ParticleCanvas }  from './ParticleCanvas'
+import { SkillButton } from './SkillButton'
+import { ParticleCanvas } from './ParticleCanvas'
 import { PixelSprite, classSprite } from './PixelSprite'
-import { T }               from '../constants/translations'
+import { T } from '../constants/translations'
 import {
-  GAME_CONFIG, STAGES,
-  itemBonusAtk, itemBonusDef, itemBonusHp,
+  GAME_CONFIG,
+  STAGES,
+  itemBonusAtk,
+  itemBonusDef,
+  itemBonusHp,
+  MONSTERS,
 } from '../constants/gameConfig'
 import { CLASSES, getBossForLevel } from '../constants/classes'
 
-function EntityCard({
-  name, spriteId, currentHp, maxHp, isPlayer, isBoss,
+const SWARM_SLOTS = [
+  { x: 18, y: 26, scale: 0.82, delay: '-0.1s' },
+  { x: 76, y: 24, scale: 0.78, delay: '-0.8s' },
+  { x: 14, y: 58, scale: 0.9, delay: '-1.2s' },
+  { x: 78, y: 60, scale: 0.95, delay: '-0.4s' },
+  { x: 50, y: 18, scale: 0.7, delay: '-1.7s' },
+  { x: 30, y: 74, scale: 0.72, delay: '-0.6s' },
+  { x: 66, y: 76, scale: 0.72, delay: '-1.4s' },
+]
+
+function hpPct(current: number, max: number) {
+  return max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0
+}
+
+function FieldMonster({
+  id,
+  name,
+  x,
+  y,
+  scale,
+  delay,
+  active,
+  boss,
+  hp,
+  maxHp,
 }: {
-  name: string; spriteId: string; currentHp: number; maxHp: number
-  isPlayer?: boolean; isBoss?: boolean
+  id: string
+  name: string
+  x: number
+  y: number
+  scale: number
+  delay: string
+  active?: boolean
+  boss?: boolean
+  hp?: number
+  maxHp?: number
 }) {
-  const pct    = maxHp > 0 ? Math.min(100, (currentHp / maxHp) * 100) : 0
-  const lowHp  = pct < 25
-
-  const border  = isBoss ? 'border-yellow-500/50 neon-border-gold' : isPlayer ? 'border-blue-600/30 neon-border' : 'border-red-700/30'
-  const barCol  = isPlayer
-    ? 'bg-gradient-to-r from-blue-600 to-cyan-400'
-    : isBoss ? 'bg-gradient-to-r from-yellow-500 to-amber-400'
-    : lowHp   ? 'bg-gradient-to-r from-red-700 to-red-400 animate-pulse'
-    : 'bg-gradient-to-r from-red-600 to-rose-400'
-
+  const percent = hp !== undefined && maxHp ? hpPct(hp, maxHp) : 100
   return (
-    <div className={`flex-1 rounded-2xl glass p-2 flex flex-col items-center gap-1.5 min-w-0 ${border} ${isBoss ? 'boss-warn-bg' : ''}`}>
-      {/* Pixel sprite */}
-      <PixelSprite
-        id={spriteId}
-        size={48}
-        animate={isPlayer ? 'idle' : isBoss ? 'attack' : 'idle'}
-      />
-      <div className="text-center w-full">
-        {isBoss && <p className="boss-shimmer text-[9px] font-black tracking-widest">☠️ BOSS</p>}
-        <p className="text-xs font-bold text-white truncate w-full">{name}</p>
-      </div>
-      <div className="w-full">
-        <div className="flex justify-between text-[10px] text-gray-500 mb-0.5">
-          <span>HP</span>
-          <span className={lowHp && !isPlayer ? 'text-red-400 animate-pulse' : ''}>
-            {Math.max(0, currentHp)}/{maxHp}
-          </span>
+    <div
+      className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 ${active ? 'field-monster-active' : 'field-monster'} ${boss ? 'field-boss' : ''}`}
+      style={{ left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) scale(${boss ? scale * 1.35 : scale})`, animationDelay: delay }}
+    >
+      {active && <div className="target-ring" />}
+      <PixelSprite id={boss ? 'boss' : id} size={boss ? 58 : 42} animate={boss ? 'attack' : active ? 'hurt' : 'idle'} />
+      {active && (
+        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-20">
+          <p className={`text-[9px] text-center font-bold truncate ${boss ? 'boss-shimmer' : 'text-red-200'}`}>{boss ? '☠️ ' : ''}{name}</p>
+          <div className="h-1 rounded-full bg-black/70 overflow-hidden border border-red-900/40">
+            <div className={`h-full rounded-full ${boss ? 'bg-yellow-400' : 'bg-red-500'} bar-fill`} style={{ width: `${percent}%` }} />
+          </div>
         </div>
-        <div className="w-full h-1.5 rounded-full bg-gray-800/80 overflow-hidden">
-          <div className={`h-full rounded-full bar-fill ${barCol}`} style={{ width: `${pct}%` }} />
-        </div>
-      </div>
+      )}
     </div>
   )
 }
 
 export function CombatZone() {
-  const player         = useGameStore(s => s.player)
-  const monster        = useGameStore(s => s.monster)
-  const equipment      = useGameStore(s => s.equipment)
-  const isAuto         = useGameStore(s => s.isAutoBattle)
-  const setAuto        = useGameStore(s => s.setAutoBattle)
+  const player = useGameStore(s => s.player)
+  const monster = useGameStore(s => s.monster)
+  const equipment = useGameStore(s => s.equipment)
+  const isAuto = useGameStore(s => s.isAutoBattle)
+  const setAuto = useGameStore(s => s.setAutoBattle)
   const currentStageId = useGameStore(s => s.currentStageId)
   const killsSinceBoss = useGameStore(s => s.killsSinceBoss)
 
-  const stage      = STAGES.find(st => st.id === currentStageId) ?? STAGES[0]
-  const cls        = player.classId ? CLASSES.find(c => c.id === player.classId) : null
-  const eqItems    = [equipment.weapon, equipment.armor, equipment.accessory].filter(Boolean)
-  const totalEqHp  = eqItems.reduce((s, i) => s + itemBonusHp(i!),  0)
-  const totalEqAtk = eqItems.reduce((s, i) => s + itemBonusAtk(i!), 0)
-  const totalEqDef = eqItems.reduce((s, i) => s + itemBonusDef(i!), 0)
-  const hpMult     = cls ? 1 + cls.passive.hpBonus / 100 : 1
-  const maxHp      = Math.floor((GAME_CONFIG.maxHpFormula(player.vit, player.baseHp) + totalEqHp) * hpMult)
+  const stage = STAGES.find(st => st.id === currentStageId) ?? STAGES[0]
+  const cls = player.classId ? CLASSES.find(c => c.id === player.classId) : null
+  const eqItems = [equipment.weapon, equipment.armor, equipment.accessory].filter(Boolean)
+  const totalEqHp = eqItems.reduce((sum, item) => sum + itemBonusHp(item!), 0)
+  const totalEqAtk = eqItems.reduce((sum, item) => sum + itemBonusAtk(item!), 0)
+  const totalEqDef = eqItems.reduce((sum, item) => sum + itemBonusDef(item!), 0)
+  const hpMult = cls ? 1 + cls.passive.hpBonus / 100 : 1
+  const maxHp = Math.floor((GAME_CONFIG.maxHpFormula(player.vit, player.baseHp) + totalEqHp) * hpMult)
+  const playerHp = hpPct(player.currentHp, maxHp)
 
-  const bossTemplate  = getBossForLevel(player.level)
-  const killsToNext   = Math.max(0, bossTemplate.killsRequired - killsSinceBoss)
-  const bossProgress  = Math.min(100, (killsSinceBoss / bossTemplate.killsRequired) * 100)
+  const bossTemplate = getBossForLevel(player.level)
+  const killsToNext = Math.max(0, bossTemplate.killsRequired - killsSinceBoss)
+  const bossProgress = Math.min(100, (killsSinceBoss / bossTemplate.killsRequired) * 100)
 
-  // Get monster sprite id
-  const monsterSpriteId = monster.isBoss ? 'boss' : monster.template.id
+  const swarm = useMemo(() => {
+    const pool = MONSTERS.filter(m => stage.monsterIds.includes(m.id))
+    const fallback = pool.length > 0 ? pool : MONSTERS
+    return SWARM_SLOTS.map((slot, index) => ({
+      ...slot,
+      template: index === 0 ? monster.template : fallback[index % fallback.length],
+      active: index === 0,
+    }))
+  }, [stage.monsterIds, monster.template])
+
+  const stageTone =
+    currentStageId === 'morroc' ? 'from-amber-950 via-orange-950 to-stone-950'
+    : currentStageId === 'glast_heim' ? 'from-slate-950 via-gray-950 to-purple-950'
+    : currentStageId === 'orc_village' ? 'from-red-950 via-stone-950 to-orange-950'
+    : currentStageId === 'payon_forest' ? 'from-emerald-950 via-teal-950 to-green-950'
+    : 'from-green-950 via-emerald-950 to-slate-950'
 
   return (
     <section className="flex-1 min-h-0 flex flex-col px-3 py-2 gap-1.5 relative overflow-hidden">
-      {/* BG grid */}
-      <div className="absolute inset-0 opacity-[0.04] pointer-events-none" style={{
-        backgroundImage: 'linear-gradient(#A78BFA 1px,transparent 1px),linear-gradient(90deg,#A78BFA 1px,transparent 1px)',
-        backgroundSize: '32px 32px',
-      }} />
-
       <ParticleCanvas />
 
-      {/* Stage strip */}
-      <div className="relative z-10 flex items-center justify-between">
-        <span className="text-[10px] text-purple-400 font-semibold">{stage.emoji} {stage.name}</span>
-        <div className="flex items-center gap-2">
-          {cls && (
-            <span className="glass rounded-full px-2 py-0.5 text-[9px] text-purple-300 font-bold border border-purple-700/30">
-              {cls.emoji} {cls.name}
-            </span>
-          )}
-          <span className={`text-[9px] font-semibold ${isAuto ? 'text-green-400' : 'text-gray-500'}`}>
-            {isAuto ? '⚔️ ON' : '💤 OFF'}
-          </span>
-        </div>
+      <div className="relative z-20 flex items-center justify-between">
+        <span className="text-[10px] text-purple-300 font-bold glass rounded-full px-2 py-0.5">
+          {stage.emoji} {stage.name}
+        </span>
+        <span className={`text-[9px] font-bold glass rounded-full px-2 py-0.5 ${isAuto ? 'text-green-300' : 'text-gray-500'}`}>
+          {isAuto ? '⚔️ เดินล่าอัตโนมัติ' : '💤 หยุดเดิน'}
+        </span>
       </div>
 
-      {/* VS Row */}
-      <div className="relative z-10 flex items-center gap-2">
-        <EntityCard
-          name={player.name}
-          spriteId={classSprite(player.classId)}
-          currentHp={player.currentHp}
-          maxHp={maxHp}
-          isPlayer
-        />
-        <div className="flex flex-col items-center gap-1 shrink-0">
-          <span className="text-base font-black grad-text-gold">VS</span>
-          <div className="w-px h-4 bg-purple-700/60" />
+      <div className={`relative z-10 flex-1 min-h-[190px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${stageTone} shadow-2xl shadow-black/30`}> 
+        <div className="field-grid" />
+        <div className="field-path field-path-a" />
+        <div className="field-path field-path-b" />
+        <div className="field-vignette" />
+
+        {/* map props */}
+        <span className="field-prop" style={{ left: '12%', top: '18%' }}>🌳</span>
+        <span className="field-prop" style={{ left: '84%', top: '18%' }}>🌲</span>
+        <span className="field-prop" style={{ left: '8%', top: '78%' }}>🪨</span>
+        <span className="field-prop" style={{ left: '88%', top: '78%' }}>🌿</span>
+        <span className="field-prop opacity-60" style={{ left: '48%', top: '82%' }}>✨</span>
+
+        {/* swarm monsters */}
+        {swarm.map((mob, index) => (
+          <FieldMonster
+            key={`${mob.template.id}-${index}-${monster.isBoss ? 'boss' : 'mob'}`}
+            id={mob.template.id}
+            name={mob.template.name}
+            x={monster.isBoss && index === 0 ? 50 : mob.x}
+            y={monster.isBoss && index === 0 ? 28 : mob.y}
+            scale={monster.isBoss && index === 0 ? 1.15 : mob.scale}
+            delay={mob.delay}
+            active={index === 0}
+            boss={monster.isBoss && index === 0}
+            hp={index === 0 ? monster.currentHp : undefined}
+            maxHp={index === 0 ? monster.maxHp : undefined}
+          />
+        ))}
+
+        {/* player */}
+        <div className="absolute z-20 left-1/2 top-[54%] -translate-x-1/2 -translate-y-1/2 field-player">
+          <div className="player-aura" />
+          <PixelSprite id={classSprite(player.classId)} size={62} animate={isAuto ? 'attack' : 'idle'} />
+          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-24">
+            <p className="text-[9px] text-center text-blue-100 font-bold truncate">{player.name}</p>
+            <div className="h-1.5 rounded-full bg-black/70 overflow-hidden border border-blue-900/40">
+              <div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-300 bar-fill" style={{ width: `${playerHp}%` }} />
+            </div>
+          </div>
         </div>
-        <EntityCard
-          name={monster.template.name}
-          spriteId={monsterSpriteId}
-          currentHp={monster.currentHp}
-          maxHp={monster.maxHp}
-          isBoss={monster.isBoss}
-        />
+
         <FloatingNumbers />
       </div>
 
-      {/* Equip bonus */}
-      {eqItems.length > 0 && (
-        <div className="relative z-10 flex gap-3 justify-center text-[10px]">
-          {totalEqAtk > 0 && <span className="text-red-400">⚔️+{totalEqAtk}</span>}
-          {totalEqDef > 0 && <span className="text-blue-400">🛡+{totalEqDef}</span>}
-          {totalEqHp  > 0 && <span className="text-green-400">❤️+{totalEqHp}</span>}
-        </div>
-      )}
-
-      {/* Boss progress */}
-      {!monster.isBoss ? (
-        <div className="relative z-10">
+      <div className="relative z-20 grid grid-cols-[1fr_auto] gap-2 items-center">
+        <div>
           <div className="flex justify-between text-[9px] text-gray-600 mb-0.5">
             <span>บอสถัดไป</span>
-            <span className="text-orange-500/80">{T.killsToNextBoss(killsToNext)}</span>
+            <span className="text-orange-400">{monster.isBoss ? '☠️ กำลังรุมบอส!' : T.killsToNextBoss(killsToNext)}</span>
           </div>
-          <div className="w-full h-1.5 rounded-full bg-gray-800/80 overflow-hidden">
-            <div className="h-full rounded-full bg-gradient-to-r from-orange-700 to-yellow-500 bar-fill" style={{ width: `${bossProgress}%` }} />
+          <div className="h-1.5 rounded-full bg-gray-800/80 overflow-hidden">
+            <div className="h-full rounded-full bg-gradient-to-r from-orange-700 to-yellow-500 bar-fill" style={{ width: `${monster.isBoss ? 100 : bossProgress}%` }} />
           </div>
+          {eqItems.length > 0 && (
+            <div className="mt-0.5 flex gap-2 text-[9px]">
+              {totalEqAtk > 0 && <span className="text-red-400">⚔️+{totalEqAtk}</span>}
+              {totalEqDef > 0 && <span className="text-blue-400">🛡+{totalEqDef}</span>}
+              {totalEqHp > 0 && <span className="text-green-400">❤️+{totalEqHp}</span>}
+            </div>
+          )}
         </div>
-      ) : (
-        <p className="relative z-10 text-center text-[10px] font-black boss-shimmer animate-pulse tracking-widest">
-          ☠️ BOSS BATTLE ☠️
-        </p>
-      )}
+        <div className="text-[9px] text-right text-gray-500 leading-tight">
+          <div>มอนบนแมพ: {swarm.length}</div>
+          <div className="text-purple-400">Auto target: {monster.template.name}</div>
+        </div>
+      </div>
 
-      {/* Action buttons */}
-      <div className="relative z-10 flex gap-2">
+      <div className="relative z-20 flex gap-2">
         <button
           onClick={() => setAuto(!isAuto)}
-          className={`flex-1 py-2 rounded-xl font-bold text-xs tracking-wide btn-press
-            ${isAuto
-              ? 'bg-gradient-to-r from-green-700 to-emerald-500 text-white shadow-lg shadow-green-900/40'
-              : 'glass text-gray-400 border border-gray-700/50'}`}
+          className={`flex-1 py-2 rounded-xl font-bold text-xs tracking-wide btn-press ${isAuto ? 'bg-gradient-to-r from-green-700 to-emerald-500 text-white shadow-lg shadow-green-900/40' : 'glass text-gray-400 border border-gray-700/50'}`}
         >
-          {isAuto ? `🤖 ${T.autoBattle}` : `▶️ เปิดบอท`}
+          {isAuto ? '🤖 เดินล่า / มอนรุม' : '▶️ เริ่มเดินล่า'}
         </button>
         <SkillButton />
       </div>
