@@ -129,6 +129,59 @@ export const SPRITES: Record<string, string> = {
     <rect x="5" y="4" width="2" height="2" fill="rgba(255,255,255,0.3)"/>
   </svg>`,
 
+  fabre: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+    <rect x="3" y="7" width="10" height="4" fill="#f59e0b"/><rect x="4" y="5" width="8" height="2" fill="#fbbf24"/>
+    <rect x="2" y="8" width="2" height="2" fill="#d97706"/><rect x="12" y="8" width="2" height="2" fill="#d97706"/>
+    <rect x="5" y="6" width="1" height="1" fill="#111827"/><rect x="10" y="6" width="1" height="1" fill="#111827"/>
+    <rect x="4" y="11" width="2" height="2" fill="#92400e"/><rect x="10" y="11" width="2" height="2" fill="#92400e"/>
+    <rect x="2" y="4" width="2" height="1" fill="#fbbf24"/><rect x="12" y="4" width="2" height="1" fill="#fbbf24"/>
+  </svg>`,
+
+  lunatic: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+    <rect x="4" y="6" width="8" height="7" fill="#f8fafc"/><rect x="5" y="4" width="6" height="2" fill="#e2e8f0"/>
+    <rect x="4" y="1" width="2" height="5" fill="#f8fafc"/><rect x="10" y="1" width="2" height="5" fill="#f8fafc"/>
+    <rect x="5" y="2" width="1" height="3" fill="#f9a8d4"/><rect x="10" y="2" width="1" height="3" fill="#f9a8d4"/>
+    <rect x="5" y="8" width="2" height="2" fill="#1e293b"/><rect x="9" y="8" width="2" height="2" fill="#1e293b"/>
+    <rect x="6" y="12" width="2" height="2" fill="#cbd5e1"/><rect x="9" y="12" width="2" height="2" fill="#cbd5e1"/>
+  </svg>`,
+
+  willow: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+    <rect x="6" y="5" width="4" height="8" fill="#92400e"/><rect x="5" y="8" width="6" height="4" fill="#78350f"/>
+    <rect x="3" y="2" width="10" height="4" fill="#16a34a"/><rect x="2" y="4" width="12" height="3" fill="#22c55e"/>
+    <rect x="4" y="1" width="8" height="2" fill="#4ade80"/><rect x="6" y="7" width="1" height="1" fill="#111827"/><rect x="9" y="7" width="1" height="1" fill="#111827"/>
+    <rect x="4" y="13" width="3" height="2" fill="#78350f"/><rect x="9" y="13" width="3" height="2" fill="#78350f"/>
+  </svg>`,
+
+  thief_bug: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+    <rect x="4" y="5" width="8" height="7" fill="#7c2d12"/><rect x="5" y="3" width="6" height="3" fill="#9a3412"/>
+    <rect x="5" y="6" width="2" height="2" fill="#fde68a"/><rect x="9" y="6" width="2" height="2" fill="#fde68a"/>
+    <rect x="2" y="7" width="2" height="1" fill="#431407"/><rect x="12" y="7" width="2" height="1" fill="#431407"/>
+    <rect x="1" y="10" width="3" height="1" fill="#431407"/><rect x="12" y="10" width="3" height="1" fill="#431407"/>
+    <rect x="6" y="12" width="1" height="2" fill="#431407"/><rect x="9" y="12" width="1" height="2" fill="#431407"/>
+  </svg>`,
+
+  zombie: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+    <rect x="5" y="3" width="6" height="4" fill="#86efac"/><rect x="4" y="7" width="8" height="6" fill="#475569"/>
+    <rect x="5" y="5" width="2" height="1" fill="#111827"/><rect x="9" y="5" width="2" height="1" fill="#111827"/>
+    <rect x="7" y="6" width="2" height="1" fill="#ef4444"/><rect x="3" y="8" width="2" height="4" fill="#86efac"/><rect x="11" y="8" width="2" height="4" fill="#86efac"/>
+    <rect x="5" y="13" width="3" height="2" fill="#334155"/><rect x="9" y="13" width="3" height="2" fill="#334155"/>
+  </svg>`,
+
+  skeleton: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+    <rect x="4" y="2" width="8" height="6" fill="#e5e7eb"/><rect x="5" y="4" width="2" height="2" fill="#111827"/><rect x="9" y="4" width="2" height="2" fill="#111827"/>
+    <rect x="7" y="6" width="2" height="1" fill="#94a3b8"/><rect x="5" y="8" width="6" height="4" fill="#d1d5db"/>
+    <rect x="3" y="9" width="2" height="1" fill="#e5e7eb"/><rect x="11" y="9" width="2" height="1" fill="#e5e7eb"/>
+    <rect x="5" y="12" width="2" height="3" fill="#e5e7eb"/><rect x="9" y="12" width="2" height="3" fill="#e5e7eb"/>
+  </svg>`,
+
+  orc: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+    <rect x="4" y="3" width="8" height="5" fill="#65a30d"/><rect x="3" y="5" width="10" height="2" fill="#84cc16"/>
+    <rect x="2" y="4" width="2" height="2" fill="#f97316"/><rect x="12" y="4" width="2" height="2" fill="#f97316"/>
+    <rect x="5" y="5" width="2" height="2" fill="#111827"/><rect x="9" y="5" width="2" height="2" fill="#111827"/>
+    <rect x="6" y="8" width="4" height="5" fill="#7f1d1d"/><rect x="3" y="8" width="3" height="4" fill="#65a30d"/><rect x="10" y="8" width="3" height="4" fill="#65a30d"/>
+    <rect x="5" y="13" width="3" height="2" fill="#451a03"/><rect x="8" y="13" width="3" height="2" fill="#451a03"/>
+  </svg>`,
+
   // ── Boss skull ─────────────────────────────────────────────
   boss: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
     <!-- skull shape -->

@@ -48,11 +48,13 @@ export interface Monster {
 }
 
 export interface FieldMob extends Monster {
-  uid:   string
-  x:     number
-  y:     number
-  scale: number
-  slot:  number
+  uid:         string
+  x:           number
+  y:           number
+  scale:       number
+  slot:        number
+  group:       number
+  pathVariant: number
 }
 
 export type LogType = 'attack'|'receive'|'kill'|'levelup'|'system'|'drop'|'enhance'|'skill'|'boss'|'achievement'
@@ -154,13 +156,16 @@ function spawnBoss(stageId: string, playerLevel: number): Monster {
 }
 
 const FIELD_SPAWNS = [
-  { x: 18, y: 26, scale: 0.82 },
-  { x: 76, y: 24, scale: 0.78 },
-  { x: 14, y: 58, scale: 0.9 },
-  { x: 78, y: 60, scale: 0.95 },
-  { x: 50, y: 18, scale: 0.7 },
-  { x: 30, y: 74, scale: 0.72 },
-  { x: 66, y: 76, scale: 0.72 },
+  { x: 47, y: 45, scale: 0.92, group: 0, pathVariant: 0 },
+  { x: 18, y: 24, scale: 0.76, group: 1, pathVariant: 1 },
+  { x: 28, y: 32, scale: 0.72, group: 1, pathVariant: 2 },
+  { x: 77, y: 24, scale: 0.78, group: 2, pathVariant: 3 },
+  { x: 86, y: 38, scale: 0.74, group: 2, pathVariant: 1 },
+  { x: 17, y: 72, scale: 0.82, group: 3, pathVariant: 2 },
+  { x: 33, y: 80, scale: 0.72, group: 3, pathVariant: 4 },
+  { x: 71, y: 75, scale: 0.8, group: 4, pathVariant: 3 },
+  { x: 86, y: 66, scale: 0.74, group: 4, pathVariant: 4 },
+  { x: 53, y: 18, scale: 0.7, group: 5, pathVariant: 5 },
 ]
 
 function withFieldMeta(monster: Monster, slot: number): FieldMob {
@@ -172,6 +177,8 @@ function withFieldMeta(monster: Monster, slot: number): FieldMob {
     x: spawn.x,
     y: spawn.y,
     scale: monster.isBoss ? spawn.scale * 1.25 : spawn.scale,
+    group: spawn.group,
+    pathVariant: spawn.pathVariant,
   }
 }
 

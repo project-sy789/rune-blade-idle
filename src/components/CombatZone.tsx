@@ -16,7 +16,37 @@ import {
 } from '../constants/gameConfig'
 import { CLASSES, getBossForLevel } from '../constants/classes'
 
-const SWARM_DELAYS = ['-0.1s', '-0.8s', '-1.2s', '-0.4s', '-1.7s', '-0.6s', '-1.4s']
+const SWARM_DELAYS = ['-0.1s', '-0.8s', '-1.2s', '-0.4s', '-1.7s', '-0.6s', '-1.4s', '-2.0s', '-0.3s', '-1.1s']
+
+const STAGE_PROPS: Record<string, Array<{ icon: string; x: number; y: number; size?: number; opacity?: number }>> = {
+  prontera: [
+    { icon: '🌳', x: 11, y: 18, size: 24 }, { icon: '🌲', x: 84, y: 17, size: 22 },
+    { icon: '🌾', x: 18, y: 54 }, { icon: '🌼', x: 40, y: 73 }, { icon: '🪨', x: 86, y: 78 },
+    { icon: '🏕️', x: 63, y: 21, size: 20, opacity: 0.75 }, { icon: '✨', x: 51, y: 84, opacity: 0.65 },
+  ],
+  payon_forest: [
+    { icon: '🌲', x: 10, y: 16, size: 25 }, { icon: '🌳', x: 27, y: 25, size: 24 },
+    { icon: '🍄', x: 73, y: 30 }, { icon: '🌿', x: 89, y: 62 }, { icon: '🪵', x: 18, y: 79 },
+    { icon: '💧', x: 58, y: 78, opacity: 0.75 }, { icon: '🪨', x: 42, y: 15 },
+  ],
+  morroc: [
+    { icon: '🌵', x: 12, y: 20, size: 25 }, { icon: '🏺', x: 76, y: 22 },
+    { icon: '🦂', x: 88, y: 50, opacity: 0.75 }, { icon: '🪨', x: 25, y: 78 }, { icon: '🔥', x: 56, y: 16, opacity: 0.7 },
+    { icon: '⛺', x: 70, y: 76, size: 20, opacity: 0.8 },
+  ],
+  glast_heim: [
+    { icon: '🪦', x: 13, y: 22, size: 22 }, { icon: '🏚️', x: 80, y: 20, size: 24 },
+    { icon: '🕯️', x: 42, y: 18 }, { icon: '💀', x: 88, y: 72 }, { icon: '🪨', x: 20, y: 80 },
+    { icon: '🕸️', x: 61, y: 78, opacity: 0.75 },
+  ],
+  orc_village: [
+    { icon: '🛖', x: 16, y: 20, size: 24 }, { icon: '🔥', x: 78, y: 27 },
+    { icon: '🪓', x: 87, y: 62 }, { icon: '🪵', x: 27, y: 78 }, { icon: '🚩', x: 53, y: 17 },
+    { icon: '🪨', x: 70, y: 80 },
+  ],
+}
+
+const GROUP_LABELS = ['เป้าหมาย', 'ฝูงเหนือซ้าย', 'ฝูงเหนือขวา', 'ฝูงใต้ซ้าย', 'ฝูงใต้ขวา', 'เฝ้าทางเข้า']
 
 function hpPct(current: number, max: number) {
   return max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0
@@ -33,6 +63,8 @@ function FieldMonster({
   boss,
   hp,
   maxHp,
+  group,
+  pathVariant,
 }: {
   id: string
   name: string
@@ -44,14 +76,17 @@ function FieldMonster({
   boss?: boolean
   hp?: number
   maxHp?: number
+  group?: number
+  pathVariant?: number
 }) {
   const percent = hp !== undefined && maxHp ? hpPct(hp, maxHp) : 100
   return (
     <div
-      className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 ${active ? 'field-monster-active' : 'field-monster'} ${boss ? 'field-boss' : ''}`}
+      className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 ${active ? 'field-monster-active' : 'field-monster'} field-roam-${pathVariant ?? 0} ${boss ? 'field-boss' : ''}`}
       style={{ left: `${x}%`, top: `${y}%`, transform: `translate(-50%, -50%) scale(${boss ? scale * 1.35 : scale})`, animationDelay: delay }}
     >
       {active && <div className="target-ring" />}
+      {!active && group !== undefined && group > 0 && <div className="mob-shadow" />}
       <PixelSprite id={boss ? 'boss' : id} size={boss ? 58 : 42} animate={boss ? 'attack' : active ? 'hurt' : 'idle'} />
       {active && (
         <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-20">
@@ -60,6 +95,11 @@ function FieldMonster({
             <div className={`h-full rounded-full ${boss ? 'bg-yellow-400' : 'bg-red-500'} bar-fill`} style={{ width: `${percent}%` }} />
           </div>
         </div>
+      )}
+      {!active && group !== undefined && group > 0 && (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-black/45 px-1.5 text-[7px] font-bold text-amber-100 border border-white/10 whitespace-nowrap">
+          กลุ่ม {group}
+        </span>
       )}
     </div>
   )
@@ -96,7 +136,12 @@ export function CombatZone() {
     x: 50,
     y: 30,
     scale: monster.isBoss ? 1.2 : 0.9,
+    group: 0,
+    pathVariant: 0,
   }]
+
+  const props = STAGE_PROPS[currentStageId] ?? STAGE_PROPS.prontera
+  const mobGroups = Array.from(new Set(swarm.map(mob => mob.group).filter(group => group > 0))).length
 
   const stageTone =
     currentStageId === 'morroc' ? 'from-amber-950 via-orange-950 to-stone-950'
@@ -119,17 +164,34 @@ export function CombatZone() {
       </div>
 
       <div className={`relative z-10 flex-1 min-h-[190px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${stageTone} shadow-2xl shadow-black/30`}> 
+        <div className="field-biome" />
         <div className="field-grid" />
         <div className="field-path field-path-a" />
         <div className="field-path field-path-b" />
+        <div className="field-path field-path-c" />
+        <div className="field-river" />
         <div className="field-vignette" />
 
-        {/* map props */}
-        <span className="field-prop" style={{ left: '12%', top: '18%' }}>🌳</span>
-        <span className="field-prop" style={{ left: '84%', top: '18%' }}>🌲</span>
-        <span className="field-prop" style={{ left: '8%', top: '78%' }}>🪨</span>
-        <span className="field-prop" style={{ left: '88%', top: '78%' }}>🌿</span>
-        <span className="field-prop opacity-60" style={{ left: '48%', top: '82%' }}>✨</span>
+        {[1, 2, 3, 4].map(group => (
+          <div key={group} className={`mob-camp mob-camp-${group}`}>
+            <span>{GROUP_LABELS[group]}</span>
+          </div>
+        ))}
+
+        <div className="hero-route" />
+        <div className="route-dot route-dot-a" />
+        <div className="route-dot route-dot-b" />
+        <div className="route-dot route-dot-c" />
+
+        {props.map((prop, index) => (
+          <span
+            key={`${prop.icon}-${index}`}
+            className="field-prop"
+            style={{ left: `${prop.x}%`, top: `${prop.y}%`, fontSize: prop.size ? `${prop.size}px` : undefined, opacity: prop.opacity ?? undefined }}
+          >
+            {prop.icon}
+          </span>
+        ))}
 
         {/* swarm monsters */}
         {swarm.map((mob, index) => (
@@ -145,11 +207,13 @@ export function CombatZone() {
             boss={mob.isBoss && index === 0}
             hp={index === 0 ? mob.currentHp : undefined}
             maxHp={index === 0 ? mob.maxHp : undefined}
+            group={mob.group}
+            pathVariant={mob.pathVariant}
           />
         ))}
 
         {/* player */}
-        <div className="absolute z-20 left-1/2 top-[54%] -translate-x-1/2 -translate-y-1/2 field-player">
+        <div className="absolute z-20 left-1/2 top-[54%] -translate-x-1/2 -translate-y-1/2 field-player field-player-roam">
           <div className="player-aura" />
           <PixelSprite id={classSprite(player.classId)} size={62} animate={isAuto ? 'attack' : 'idle'} />
           <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-24">
@@ -182,6 +246,7 @@ export function CombatZone() {
         </div>
         <div className="text-[9px] text-right text-gray-500 leading-tight">
           <div>มอนบนแมพ: {swarm.length}</div>
+          <div>กลุ่มมอน: {mobGroups}</div>
           <div className="text-purple-400">Auto target: {monster.template.name}</div>
         </div>
       </div>
