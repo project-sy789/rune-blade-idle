@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%; width: 100%;
+  margin: 0; padding: 0;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  font-family: 'Sarabun', sans-serif;
+  color: #e2d9f3;
+}
+
+/* ── Dark cosmic background ─────────────────────────────────── */
+#root {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(124,58,237,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(79,70,229,0.14) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, rgba(15,10,30,1) 0%, #080512 100%);
+}
+
+/* ── Glassmorphism card ─────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.glass-purple {
+  background: rgba(124,58,237,0.10);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(124,58,237,0.20);
+}
+
+/* ── HP / EXP bar smooth fill ───────────────────────────────── */
+.bar-fill { transition: width 0.35s cubic-bezier(0.4,0,0.2,1); }
+
+/* ── Thin scrollbar ─────────────────────────────────────────── */
+.thin-scroll::-webkit-scrollbar { width: 3px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.4); border-radius: 2px; }
+
+/* ── Glow text ──────────────────────────────────────────────── */
+.glow-gold {
+  text-shadow: 0 0 8px #FBBF24, 0 0 20px #F59E0B;
+}
+.glow-purple {
+  text-shadow: 0 0 10px #A78BFA, 0 0 24px #7C3AED;
+}
+
+/* ── Neon border pulse ──────────────────────────────────────── */
+.neon-border {
+  box-shadow: 0 0 0 1px rgba(167,139,250,0.3),
+              0 0 8px rgba(124,58,237,0.4),
+              inset 0 0 8px rgba(124,58,237,0.05);
+}
+.neon-border-gold {
+  box-shadow: 0 0 0 1px rgba(251,191,36,0.4),
+              0 0 12px rgba(245,158,11,0.5),
+              inset 0 0 8px rgba(251,191,36,0.05);
+}
+
+/* ── Button press ripple ────────────────────────────────────── */
+.btn-press {
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.btn-press:active {
+  transform: scale(0.95);
+  box-shadow: none;
+}
+
+/* ── Boss shimmer ───────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+.boss-shimmer {
+  background: linear-gradient(90deg, #F59E0B 0%, #FBBF24 30%, #FDE68A 50%, #FBBF24 70%, #F59E0B 100%);
+  background-size: 200% auto;
+  animation: shimmer 2s linear infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Level up flash ─────────────────────────────────────────── */
+@keyframes lvFlash {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.6; }
+  100% { opacity: 0; }
+}
+.lv-flash {
+  animation: lvFlash 0.6s ease-out forwards;
+}
+
+/* ── Floating damage ────────────────────────────────────────── */
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  30%  { opacity: 1; transform: translateY(-12px) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.8); }
+}
+.animate-floatUp { animation: floatUp 1.2s ease-out forwards; }
+
+/* ── Pulse glow ─────────────────────────────────────────────── */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 4px #FBBF24, 0 0 8px #F59E0B; }
+  50%       { box-shadow: 0 0 16px #FBBF24, 0 0 32px #F59E0B, 0 0 48px #D97706; }
+}
+.animate-pulseGlow { animation: pulseGlow 2s ease-in-out infinite; }
+
+/* ── Shake ──────────────────────────────────────────────────── */
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  25%       { transform: translateX(-5px); }
+  75%       { transform: translateX(5px); }
+}
+.animate-shakeX { animation: shakeX 0.25s ease-in-out; }
+
+/* ── Boss warning ───────────────────────────────────────────── */
+@keyframes bossWarn {
+  0%, 100% { background-color: transparent; }
+  50%       { background-color: rgba(239,68,68,0.08); }
+}
+.boss-warn-bg { animation: bossWarn 0.5s ease-in-out infinite; }
+
+/* ── Gradient text ──────────────────────────────────────────── */
+.grad-text-gold {
+  background: linear-gradient(135deg, #FBBF24, #F59E0B, #FDE68A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.grad-text-purple {
+  background: linear-gradient(135deg, #A78BFA, #7C3AED, #C4B5FD);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
