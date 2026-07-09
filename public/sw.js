@@ -1,5 +1,5 @@
 // Service Worker for PWA - Rune & Blade: Idle Online
-const CACHE = 'rune-blade-v4-ragnarok-map'
+const CACHE = 'rune-blade-v5-real-map'
 const SCOPE_URL = new URL(self.registration.scope)
 const APP_SHELL_URL = new URL('index.html', SCOPE_URL)
 const ICON_URL = new URL('icon.svg', SCOPE_URL)

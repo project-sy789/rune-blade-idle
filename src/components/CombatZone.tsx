@@ -6,6 +6,7 @@ import { FloatingNumbers } from './FloatingNumbers'
 import { SkillButton } from './SkillButton'
 import { ParticleCanvas } from './ParticleCanvas'
 import { PixelSprite, classSprite } from './PixelSprite'
+import { FieldMapArt } from './FieldMapArt'
 import { T } from '../constants/translations'
 import {
   GAME_CONFIG,
@@ -200,6 +201,7 @@ export function CombatZone() {
       <div className={`relative z-10 flex-1 min-h-[190px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${stageTone} ${mapStyle} shadow-2xl shadow-black/30`}> 
         <div className="rune-sky-glow" />
         <div className="field-biome" />
+        <FieldMapArt stageId={currentStageId} />
         <div className="rune-isometric-tiles" />
         <div className="rune-tile-highlights" />
         <div className="field-grid" />

@@ -362,3 +362,48 @@ html, body, #root {
 .rune-map-desert .field-river, .rune-map-orc .field-river { opacity: 0.24; }
 .hero-route { border-color: rgba(255,255,255,0.26); }
 .field-prop { filter: drop-shadow(0 7px 4px rgba(0,0,0,0.5)); }
+
+
+/* ── 9/10 map depth pass: painted terrain + richer depth ───── */
+.field-map-art {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  opacity: 0.92;
+  mix-blend-mode: screen;
+  filter: saturate(1.24) contrast(1.08);
+}
+.rune-isometric-tiles { z-index: 2; opacity: 0.48; mix-blend-mode: overlay; }
+.rune-tile-highlights { z-index: 3; }
+.field-path { z-index: 5; box-shadow: inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -8px 16px rgba(0,0,0,0.18), 0 8px 12px rgba(0,0,0,0.08); }
+.field-path-a { height: 28%; top: 43%; transform: rotate(-10deg); }
+.field-path-b { height: 18%; top: 31%; transform: rotate(36deg); opacity: 0.74; }
+.field-path-c { height: 15%; top: 62%; transform: rotate(-34deg); opacity: 0.68; }
+.field-river { z-index: 4; filter: blur(1.2px) saturate(1.4); box-shadow: 0 0 18px rgba(125,211,252,0.12); }
+.mob-camp { z-index: 7; backdrop-filter: blur(1px); border-style: dashed; }
+.hero-route { z-index: 8; opacity: 0.55; box-shadow: inset 0 0 24px rgba(255,255,255,0.05), 0 0 16px rgba(255,255,255,0.04); }
+.route-dot { z-index: 9; }
+.field-prop { z-index: 12; transform: translate(-50%, -50%) scale(1.06); text-shadow: 0 2px 0 rgba(0,0,0,0.2); }
+.field-monster, .field-monster-active { z-index: 18; }
+.field-player { z-index: 24; }
+.rune-minimap { backdrop-filter: blur(5px); }
+.rune-cliff { z-index: 10; }
+.rune-portal { z-index: 14; }
+.rune-map-coast .field-map-art, .rune-map-turtle .field-map-art { mix-blend-mode: normal; opacity: 0.86; }
+.rune-map-niflheim .field-map-art, .rune-map-ruins .field-map-art { mix-blend-mode: lighten; opacity: 0.8; }
+@keyframes mapBreath {
+  0%,100% { filter: saturate(1.18) contrast(1.06) brightness(1); }
+  50% { filter: saturate(1.28) contrast(1.1) brightness(1.05); }
+}
+.rune-map-prontera .field-map-art,
+.rune-map-forest .field-map-art,
+.rune-map-coast .field-map-art,
+.rune-map-geffen .field-map-art,
+.rune-map-desert .field-map-art,
+.rune-map-clock .field-map-art,
+.rune-map-ruins .field-map-art,
+.rune-map-orc .field-map-art,
+.rune-map-turtle .field-map-art,
+.rune-map-niflheim .field-map-art { animation: mapBreath 7s ease-in-out infinite; }
