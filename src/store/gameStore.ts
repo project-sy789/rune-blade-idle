@@ -4,7 +4,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import {
-  GAME_CONFIG, spawnMonsterInStage, rollDrops,
+  GAME_CONFIG, spawnMonsterInStage, rollDropsForStage,
   InventoryItem, itemBonusAtk, itemBonusDef, itemBonusHp,
   ITEM_TEMPLATES, STAGES, MonsterTemplate,
 } from '../constants/gameConfig'
@@ -12,6 +12,7 @@ import { ClassId, CharacterClass, CLASSES, getBossForLevel } from '../constants/
 import {
   ACHIEVEMENTS, AchievementId, AchievementContext,
 } from '../constants/achievements'
+import { getNextQuest, getQuestById } from '../constants/quests'
 import { T } from '../constants/translations'
 
 // ─── Types ───────────────────────────────────────────────────
@@ -57,12 +58,18 @@ export interface FieldMob extends Monster {
   pathVariant: number
 }
 
-export type LogType = 'attack'|'receive'|'kill'|'levelup'|'system'|'drop'|'enhance'|'skill'|'boss'|'achievement'
+export type LogType = 'attack'|'receive'|'kill'|'levelup'|'system'|'drop'|'enhance'|'skill'|'boss'|'achievement'|'quest'
 
 export interface LogEntry { id: number; text: string; type: LogType }
 export interface FloatDamage { id: number; value: number; x: number; y: number; isCrit: boolean; isSkill?: boolean }
 export interface OfflineResult { seconds: number; kills: number; exp: number; gold: number }
 export interface AchievementPopup { id: string; name: string; emoji: string; reward: string }
+export interface QuestState {
+  activeQuestId: string | null
+  completedQuestIds: string[]
+  progress: number
+  autoQuest: boolean
+}
 
 export interface GameState {
   player:           Player
@@ -78,6 +85,7 @@ export interface GameState {
   offlineResult:    OfflineResult | null
   killsSinceBoss:   number
   skillCooldownEnd: number
+  quest:            QuestState
   unlockedAchievements: AchievementId[]
   achievementPopups:    AchievementPopup[]
   logIdCounter:     number
@@ -92,6 +100,8 @@ export interface GameState {
   unequipSlot:            (slot: keyof Equipment) => void
   enhanceItem:            (uid: string) => void
   setStage:               (stageId: string) => void
+  toggleAutoQuest:        () => void
+  startQuest:             (questId: string) => void
   dismissOfflineResult:   () => void
   removeFloat:            (id: number) => void
   clearLog:               () => void
@@ -214,6 +224,80 @@ function buildAchievementContext(
   }
 }
 
+
+function addQuestRewards(player: Player, questId: string): Player {
+  const quest = getQuestById(questId)
+  if (!quest) return player
+  const next = { ...player }
+  next.exp += quest.reward.exp
+  next.gold += quest.reward.gold
+  next.statPoints += quest.reward.statPoints ?? 0
+  while (next.exp >= GAME_CONFIG.expToNextLevel(next.level)) {
+    next.exp -= GAME_CONFIG.expToNextLevel(next.level)
+    next.level++
+    next.statPoints += GAME_CONFIG.STAT_POINTS_PER_LEVEL
+    next.baseHp += 15
+    next.baseAtk += 3
+    next.baseDef += 1
+  }
+  return next
+}
+
+function syncQuest(
+  quest: QuestState,
+  player: Player,
+  currentStageId: string,
+  killedMonsterId?: string,
+): { quest: QuestState; player: Player; nextStageId?: string; messages: string[] } {
+  const messages: string[] = []
+  let nextQuest = { ...quest }
+  let nextPlayer = { ...player }
+
+  if (!nextQuest.activeQuestId) {
+    const first = getNextQuest(nextQuest.completedQuestIds)
+    if (first) {
+      nextQuest = { ...nextQuest, activeQuestId: first.id, progress: 0 }
+      messages.push(`📜 รับเควสใหม่: ${first.title}`)
+    }
+  }
+
+  const active = getQuestById(nextQuest.activeQuestId)
+  if (!active) return { quest: nextQuest, player: nextPlayer, messages }
+
+  let nextStageId: string | undefined
+  const questStage = STAGES.find(st => st.id === active.stageId)
+  if (nextQuest.autoQuest && questStage && questStage.minLevel <= nextPlayer.level && currentStageId !== active.stageId) {
+    nextStageId = active.stageId
+    messages.push(`🧭 ออโต้เควสย้ายไป ${questStage.name}`)
+  }
+
+  if (active.objective.type === 'kill' && (!active.objective.monsterId || active.objective.monsterId === killedMonsterId)) {
+    nextQuest.progress = Math.min(active.objective.required, nextQuest.progress + 1)
+  }
+  if (active.objective.type === 'level') {
+    nextQuest.progress = Math.min(active.objective.required, nextPlayer.level)
+  }
+  if (active.objective.type === 'gold') {
+    nextQuest.progress = Math.min(active.objective.required, nextPlayer.gold)
+  }
+
+  if (nextQuest.progress >= active.objective.required) {
+    nextPlayer = addQuestRewards(nextPlayer, active.id)
+    messages.push(`✅ ส่งเควสสำเร็จ: ${active.title} (+${active.reward.exp} EXP, +${active.reward.gold} เซนี่)`)
+    const completedQuestIds = [...nextQuest.completedQuestIds, active.id]
+    const upcoming = getNextQuest(completedQuestIds)
+    nextQuest = {
+      ...nextQuest,
+      completedQuestIds,
+      activeQuestId: upcoming?.id ?? null,
+      progress: 0,
+    }
+    if (upcoming) messages.push(`📜 รับเควสใหม่: ${upcoming.title}`)
+  }
+
+  return { quest: nextQuest, player: nextPlayer, nextStageId, messages }
+}
+
 function rewardLabel(reward: { type: string; amount?: number }): string {
   if (reward.type === 'gold')       return `+${reward.amount} เซนี่`
   if (reward.type === 'statpoints') return `+${reward.amount} พอยต์สถานะ`
@@ -237,6 +321,7 @@ export const useGameStore = create<GameState>()(
       offlineResult: null,
       killsSinceBoss: 0,
       skillCooldownEnd: 0,
+      quest: { activeQuestId: 'q_prontera_01', completedQuestIds: [], progress: 0, autoQuest: true },
       unlockedAchievements: [] as AchievementId[],
       achievementPopups: [] as AchievementPopup[],
       logIdCounter: _logId, floatIdCounter: _floatId,
@@ -304,6 +389,15 @@ export const useGameStore = create<GameState>()(
           fieldMobs: spawnField(stageId, s.player.level, active),
           killsSinceBoss: 0,
         })
+      },
+
+      toggleAutoQuest: () => set(s => ({ quest: { ...s.quest, autoQuest: !s.quest.autoQuest } })),
+
+      startQuest: (questId) => {
+        const quest = getQuestById(questId)
+        if (!quest) return
+        set(s => ({ quest: { ...s.quest, activeQuestId: questId, progress: 0 } }))
+        get().addLog(`📜 รับเควส: ${quest.title}`, 'quest')
       },
 
       allocateStat: (stat) =>
@@ -375,6 +469,8 @@ export const useGameStore = create<GameState>()(
           let m = { ...fieldMobs[0] } as FieldMob
           let inv = [...sv.inventory]
           let ks = sv.killsSinceBoss
+          let quest = sv.quest
+          let currentStageId = sv.currentStageId
           const floats: FloatDamage[] = []
           let newLog = [...sv.log]
           const push = (text: string, type: LogType) => {
@@ -393,12 +489,25 @@ export const useGameStore = create<GameState>()(
             const em = 1 + stage.expBonus / 100 + (cls.passive.expBonus / 100)
             const eg = Math.floor(m.template.expReward * em)
             const gg = Math.floor(m.template.goldReward * gm)
+            const defeatedTemplate = m.template
+            const defeatedStageId = sv.currentStageId
+            const defeatedWasBoss = m.isBoss
             p.exp += eg; p.gold += gg; p.totalKills++
-            if (m.isBoss) p.bossKills++
-            push(T.monsterDefeated(m.template.name), m.isBoss ? 'boss' : 'kill')
+            const questResult = syncQuest(sv.quest, p, defeatedStageId, defeatedTemplate.id)
+            p = questResult.player
+            quest = questResult.quest
+            for (const message of questResult.messages) push(message, 'quest')
+            if (questResult.nextStageId) {
+              currentStageId = questResult.nextStageId
+              const nextActive = { ...spawnMonsterInStage(questResult.nextStageId, p.level), isBoss: false }
+              fieldMobs = spawnField(questResult.nextStageId, p.level, nextActive)
+              m = fieldMobs[0]
+            }
+            if (defeatedWasBoss) p.bossKills++
+            push(T.monsterDefeated(defeatedTemplate.name), defeatedWasBoss ? 'boss' : 'kill')
             push(T.gainExp(eg), 'system'); push(T.gainGold(gg), 'system')
 
-            for (const d of rollDrops(m.template)) {
+            for (const d of rollDropsForStage(defeatedStageId, defeatedTemplate)) {
               const t = ITEM_TEMPLATES.find(x => x.id === d.templateId)
               if (t) { inv.push(d); push(T.itemDrop(t.name), 'drop') }
             }
@@ -409,23 +518,23 @@ export const useGameStore = create<GameState>()(
               push(T.levelUp(p.level), 'levelup'); push(T.gotStatPoints(GAME_CONFIG.STAT_POINTS_PER_LEVEL), 'system')
             }
 
-            if (!m.isBoss) ks++; else ks = 0
+            if (!defeatedWasBoss) ks++; else ks = 0
             const bossT = getBossForLevel(p.level)
-            if (ks >= bossT.killsRequired && !m.isBoss) {
-              const boss = spawnBoss(sv.currentStageId, p.level)
+            if (ks >= bossT.killsRequired && !defeatedWasBoss) {
+              const boss = spawnBoss(currentStageId, p.level)
               m = withFieldMeta(boss, 0)
               fieldMobs[0] = m
               push(T.bossAppears(m.template.name), 'boss')
               ks = 0
             } else {
-              m = spawnFieldMob(sv.currentStageId, p.level, 0)
+              m = spawnFieldMob(currentStageId, p.level, 0)
               fieldMobs[0] = m
               push(T.newMonster, 'system')
             }
             setTimeout(() => get().checkAchievements(), 50)
           }
 
-          return { player: p, monster: fieldMobs[0], fieldMobs, inventory: inv, log: newLog, floats: [...sv.floats, ...floats], killsSinceBoss: ks, logIdCounter: _logId, floatIdCounter: _floatId }
+          return { player: p, monster: fieldMobs[0], fieldMobs, inventory: inv, log: newLog, floats: [...sv.floats, ...floats], killsSinceBoss: ks, quest: quest, currentStageId: currentStageId, logIdCounter: _logId, floatIdCounter: _floatId }
         })
         set({ skillCooldownEnd: Date.now() + (getCharClass(get().player.classId)?.skill.cooldownSec ?? 10) * 1000 })
       },
@@ -441,6 +550,8 @@ export const useGameStore = create<GameState>()(
           const floats: FloatDamage[] = []
           let newLog = [...s.log]
           let ks = s.killsSinceBoss
+          let quest = s.quest
+          let currentStageId = s.currentStageId
 
           const push = (text: string, type: LogType) => {
             newLog = [{ id: _logId++, text, type }, ...newLog].slice(0, GAME_CONFIG.MAX_LOG_LINES)
@@ -461,17 +572,30 @@ export const useGameStore = create<GameState>()(
           if (m.currentHp <= 0) {
             const eg = Math.floor(m.template.expReward  * em)
             const gg = Math.floor(m.template.goldReward * gm)
-            push(T.monsterDefeated(m.template.name), m.isBoss ? 'boss' : 'kill')
-            if (m.isBoss) { push(T.bossDefeated(m.template.name), 'boss'); p.bossKills++ }
+            const defeatedTemplate = m.template
+            const defeatedStageId = s.currentStageId
+            const defeatedWasBoss = m.isBoss
+            push(T.monsterDefeated(defeatedTemplate.name), defeatedWasBoss ? 'boss' : 'kill')
+            if (defeatedWasBoss) { push(T.bossDefeated(defeatedTemplate.name), 'boss'); p.bossKills++ }
             push(T.gainExp(eg), 'system')
             push(T.gainGold(gg), 'system')
             p.exp += eg
             p.gold += gg
             p.totalKills++
-            if (!m.isBoss) ks++
+            const questResult = syncQuest(s.quest, p, defeatedStageId, defeatedTemplate.id)
+            p = questResult.player
+            quest = questResult.quest
+            currentStageId = questResult.nextStageId ?? s.currentStageId
+            for (const message of questResult.messages) push(message, 'quest')
+            if (questResult.nextStageId) {
+              const nextActive = { ...spawnMonsterInStage(questResult.nextStageId, p.level), isBoss: false }
+              fieldMobs = spawnField(questResult.nextStageId, p.level, nextActive)
+              m = fieldMobs[0]
+            }
+            if (!defeatedWasBoss) ks++
             else ks = 0
 
-            const drops = rollDrops(m.template)
+            const drops = rollDropsForStage(defeatedStageId, defeatedTemplate)
             for (const d of drops) {
               const t = ITEM_TEMPLATES.find(x => x.id === d.templateId)
               if (t) { inv.push(d); push(T.itemDrop(t.name), 'drop') }
@@ -490,14 +614,14 @@ export const useGameStore = create<GameState>()(
             }
 
             const bossT = getBossForLevel(p.level)
-            if (ks >= bossT.killsRequired && !m.isBoss) {
-              const boss = spawnBoss(s.currentStageId, p.level)
+            if (ks >= bossT.killsRequired && !defeatedWasBoss) {
+              const boss = spawnBoss(currentStageId, p.level)
               m = withFieldMeta(boss, 0)
               fieldMobs[0] = m
               push(T.bossAppears(m.template.name), 'boss')
               ks = 0
             } else {
-              m = spawnFieldMob(s.currentStageId, p.level, 0)
+              m = spawnFieldMob(currentStageId, p.level, 0)
               fieldMobs[0] = m
               push(T.newMonster, 'system')
             }
@@ -514,8 +638,8 @@ export const useGameStore = create<GameState>()(
           if (p.currentHp <= 0) {
             p.currentHp = Math.floor(getMaxHp(p, s.equipment) * 0.5)
             push(T.playerDied, 'system')
-            const freshTarget = { ...spawnMonsterInStage(s.currentStageId, p.level), isBoss: false }
-            fieldMobs = spawnField(s.currentStageId, p.level, freshTarget)
+            const freshTarget = { ...spawnMonsterInStage(currentStageId, p.level), isBoss: false }
+            fieldMobs = spawnField(currentStageId, p.level, freshTarget)
             m = fieldMobs[0]
           }
 
@@ -523,6 +647,8 @@ export const useGameStore = create<GameState>()(
             player: p,
             monster: fieldMobs[0],
             fieldMobs,
+            currentStageId,
+            quest,
             inventory: inv,
             log: newLog,
             floats: [...s.floats, ...floats],
@@ -572,7 +698,7 @@ export const useGameStore = create<GameState>()(
       partialize: (s) => ({
         player: s.player, equipment: s.equipment, inventory: s.inventory,
         lastLogin: s.lastLogin, currentStageId: s.currentStageId,
-        killsSinceBoss: s.killsSinceBoss, unlockedAchievements: s.unlockedAchievements,
+        killsSinceBoss: s.killsSinceBoss, quest: s.quest, unlockedAchievements: s.unlockedAchievements,
         log: s.log.slice(0, 20),
       }),
     },

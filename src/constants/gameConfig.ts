@@ -74,6 +74,14 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { id: 'iron_ring',   name: 'แหวนเหล็ก',          emoji: '💍',  type: 'accessory', rarity: 'common',   bonusAtk: 3,  bonusDef: 3,  bonusHp: 20,  desc: 'แหวนเสริมสถานะเล็กน้อย' },
   { id: 'brave_cape',  name: 'ผ้าคลุมนักรบ',       emoji: '🧣',  type: 'accessory', rarity: 'uncommon', bonusAtk: 5,  bonusDef: 5,  bonusHp: 40,  desc: 'ผ้าคลุมให้กำลังใจ' },
   { id: 'angel_wing',  name: 'ปีกนางฟ้า',          emoji: '🪽',  type: 'accessory', rarity: 'rare',     bonusAtk: 10, bonusDef: 8,  bonusHp: 80,  desc: 'หนึ่งในของหายากมาก' },
+  { id: 'beach_blade', name: 'ดาบคลื่นอิซลูด',      emoji: '🌊',  type: 'weapon',    rarity: 'rare',     bonusAtk: 24, bonusDef: 0,  bonusHp: 30,  desc: 'ดาบจากชายฝั่งอิซลูด เพิ่มพลังโจมตีและพลังชีวิต' },
+  { id: 'rune_staff',  name: 'คทารูนเกฟเฟ่น',       emoji: '🔮',  type: 'weapon',    rarity: 'epic',     bonusAtk: 32, bonusDef: 0,  bonusHp: 70,  desc: 'คทาเวทจากเกฟเฟ่น มีพลังรูนเข้มข้น' },
+  { id: 'desert_charm',name: 'เครื่องรางมอร็อค',    emoji: '🏜️',  type: 'accessory', rarity: 'rare',     bonusAtk: 8,  bonusDef: 8,  bonusHp: 90,  desc: 'เครื่องรางทะเลทราย ช่วยเอาตัวรอดจากมอนรุม' },
+  { id: 'clock_gear',  name: 'เฟืองหอนาฬิกา',       emoji: '⚙️',  type: 'accessory', rarity: 'epic',     bonusAtk: 14, bonusDef: 12, bonusHp: 80,  desc: 'เฟืองเวทมนตร์จากอัลเดบารัน' },
+  { id: 'cursed_mail', name: 'เกราะต้องสาป',         emoji: '🕯️',  type: 'armor',     rarity: 'epic',     bonusAtk: 6,  bonusDef: 42, bonusHp: 220, desc: 'เกราะจากกลาสต์เฮม หนาและน่ากลัว' },
+  { id: 'orc_axe',     name: 'ขวานออร์ค',            emoji: '🪓',  type: 'weapon',    rarity: 'epic',     bonusAtk: 44, bonusDef: 4,  bonusHp: 50,  desc: 'ขวานหนักจากหัวหน้าออร์ค' },
+  { id: 'turtle_shell',name: 'กระดองเต่าโบราณ',      emoji: '🐢',  type: 'armor',     rarity: 'epic',     bonusAtk: 0,  bonusDef: 52, bonusHp: 280, desc: 'กระดองเก่าแก่จากเกาะเต่า' },
+  { id: 'shadow_ring', name: 'แหวนเงานีฟล์เฮม',      emoji: '🌑',  type: 'accessory', rarity: 'epic',     bonusAtk: 22, bonusDef: 16, bonusHp: 120, desc: 'แหวนจากโลกมืด เพิ่มพลังรอบด้าน' },
 ]
 
 export const RARITY_COLOR: Record<ItemRarity, string> = {
@@ -219,6 +227,7 @@ export interface StageInfo {
   monsterIds: string[]  // ดึง monsters จาก pool นี้
   goldBonus:  number    // % bonus gold ในด่านนี้
   expBonus:   number    // % bonus exp
+  dropOverrides?: Record<string, DropEntry[]>
   isBoss?:    boolean
   bossId?:    string
 }
@@ -232,33 +241,90 @@ export const STAGES: StageInfo[] = [
     minLevel: 1,
     monsterIds: ['poring', 'fabre'],
     goldBonus: 0, expBonus: 0,
+    dropOverrides: {
+      poring: [{ templateId: 'shortsword', chance: 0.16 }, { templateId: 'cloth_armor', chance: 0.14 }, { templateId: 'iron_ring', chance: 0.08 }],
+      fabre:  [{ templateId: 'cloth_armor', chance: 0.16 }, { templateId: 'staff', chance: 0.11 }, { templateId: 'iron_ring', chance: 0.1 }],
+    },
   },
   {
     id: 'payon_forest',
     name: 'ป่าเพย์ออน',
     emoji: '🌲',
     bgColor: 'from-teal-950 to-green-950',
-    minLevel: 5,
+    minLevel: 4,
     monsterIds: ['lunatic', 'willow'],
-    goldBonus: 10, expBonus: 5,
+    goldBonus: 8, expBonus: 5,
+    dropOverrides: {
+      lunatic: [{ templateId: 'bow', chance: 0.17 }, { templateId: 'leather_vest', chance: 0.13 }, { templateId: 'brave_cape', chance: 0.09 }],
+      willow:  [{ templateId: 'iron_sword', chance: 0.16 }, { templateId: 'brave_cape', chance: 0.11 }, { templateId: 'staff', chance: 0.08 }],
+    },
+  },
+  {
+    id: 'izlude_coast',
+    name: 'ชายฝั่งอิซลูด',
+    emoji: '🌊',
+    bgColor: 'from-sky-950 to-cyan-950',
+    minLevel: 7,
+    monsterIds: ['poring', 'lunatic', 'thief_bug'],
+    goldBonus: 14, expBonus: 9,
+    dropOverrides: {
+      poring:    [{ templateId: 'beach_blade', chance: 0.05 }, { templateId: 'iron_ring', chance: 0.14 }, { templateId: 'brave_cape', chance: 0.08 }],
+      lunatic:   [{ templateId: 'beach_blade', chance: 0.07 }, { templateId: 'bow', chance: 0.16 }, { templateId: 'leather_vest', chance: 0.12 }],
+      thief_bug: [{ templateId: 'beach_blade', chance: 0.08 }, { templateId: 'chainmail', chance: 0.13 }, { templateId: 'arc_wand', chance: 0.08 }],
+    },
+  },
+  {
+    id: 'geffen_field',
+    name: 'ทุ่งเวทเกฟเฟ่น',
+    emoji: '🔮',
+    bgColor: 'from-violet-950 to-indigo-950',
+    minLevel: 10,
+    monsterIds: ['willow', 'thief_bug'],
+    goldBonus: 20, expBonus: 13,
+    dropOverrides: {
+      willow:    [{ templateId: 'rune_staff', chance: 0.05 }, { templateId: 'arc_wand', chance: 0.11 }, { templateId: 'brave_cape', chance: 0.12 }],
+      thief_bug: [{ templateId: 'rune_staff', chance: 0.07 }, { templateId: 'chainmail', chance: 0.14 }, { templateId: 'iron_ring', chance: 0.16 }],
+    },
   },
   {
     id: 'morroc',
     name: 'ทะเลทรายมอร็อค',
     emoji: '🏜️',
     bgColor: 'from-yellow-950 to-orange-950',
-    minLevel: 10,
-    monsterIds: ['thief_bug', 'willow'],
-    goldBonus: 20, expBonus: 10,
+    minLevel: 13,
+    monsterIds: ['thief_bug', 'willow', 'zombie'],
+    goldBonus: 28, expBonus: 18,
+    dropOverrides: {
+      thief_bug: [{ templateId: 'desert_charm', chance: 0.08 }, { templateId: 'chainmail', chance: 0.14 }, { templateId: 'arc_wand', chance: 0.1 }],
+      willow:    [{ templateId: 'desert_charm', chance: 0.06 }, { templateId: 'iron_sword', chance: 0.16 }, { templateId: 'brave_cape', chance: 0.12 }],
+      zombie:    [{ templateId: 'desert_charm', chance: 0.1 }, { templateId: 'knight_sword', chance: 0.12 }, { templateId: 'chainmail', chance: 0.15 }],
+    },
+  },
+  {
+    id: 'aldebaran_clock',
+    name: 'หอนาฬิกาอัลเดบารัน',
+    emoji: '🕰️',
+    bgColor: 'from-stone-950 to-amber-950',
+    minLevel: 16,
+    monsterIds: ['skeleton', 'thief_bug'],
+    goldBonus: 36, expBonus: 24,
+    dropOverrides: {
+      skeleton:  [{ templateId: 'clock_gear', chance: 0.08 }, { templateId: 'plate_armor', chance: 0.11 }, { templateId: 'angel_wing', chance: 0.05 }],
+      thief_bug: [{ templateId: 'clock_gear', chance: 0.06 }, { templateId: 'arc_wand', chance: 0.12 }, { templateId: 'chainmail', chance: 0.14 }],
+    },
   },
   {
     id: 'glast_heim',
     name: 'ปราสาทกลาสต์เฮม',
     emoji: '🏚️',
     bgColor: 'from-gray-950 to-slate-950',
-    minLevel: 15,
+    minLevel: 19,
     monsterIds: ['zombie', 'skeleton'],
-    goldBonus: 35, expBonus: 20,
+    goldBonus: 45, expBonus: 30,
+    dropOverrides: {
+      zombie:   [{ templateId: 'cursed_mail', chance: 0.08 }, { templateId: 'knight_sword', chance: 0.13 }, { templateId: 'chainmail', chance: 0.16 }],
+      skeleton: [{ templateId: 'cursed_mail', chance: 0.1 }, { templateId: 'plate_armor', chance: 0.12 }, { templateId: 'angel_wing', chance: 0.06 }],
+    },
   },
   {
     id: 'orc_village',
@@ -267,7 +333,39 @@ export const STAGES: StageInfo[] = [
     bgColor: 'from-red-950 to-orange-950',
     minLevel: 22,
     monsterIds: ['orc', 'skeleton'],
-    goldBonus: 50, expBonus: 30,
+    goldBonus: 55, expBonus: 36,
+    dropOverrides: {
+      orc:      [{ templateId: 'orc_axe', chance: 0.1 }, { templateId: 'plate_armor', chance: 0.15 }, { templateId: 'angel_wing', chance: 0.08 }],
+      skeleton: [{ templateId: 'orc_axe', chance: 0.06 }, { templateId: 'cursed_mail', chance: 0.08 }, { templateId: 'plate_armor', chance: 0.13 }],
+    },
+  },
+  {
+    id: 'turtle_island',
+    name: 'เกาะเต่าโบราณ',
+    emoji: '🐢',
+    bgColor: 'from-emerald-950 to-lime-950',
+    minLevel: 26,
+    monsterIds: ['orc', 'zombie', 'willow'],
+    goldBonus: 68, expBonus: 45,
+    dropOverrides: {
+      orc:    [{ templateId: 'turtle_shell', chance: 0.08 }, { templateId: 'orc_axe', chance: 0.1 }, { templateId: 'plate_armor', chance: 0.14 }],
+      zombie: [{ templateId: 'turtle_shell', chance: 0.09 }, { templateId: 'cursed_mail', chance: 0.09 }, { templateId: 'angel_wing', chance: 0.07 }],
+      willow: [{ templateId: 'turtle_shell', chance: 0.05 }, { templateId: 'rune_staff', chance: 0.07 }, { templateId: 'brave_cape', chance: 0.14 }],
+    },
+  },
+  {
+    id: 'niflheim_gate',
+    name: 'ประตูนีฟล์เฮม',
+    emoji: '🌑',
+    bgColor: 'from-purple-950 to-black',
+    minLevel: 30,
+    monsterIds: ['skeleton', 'orc', 'zombie'],
+    goldBonus: 85, expBonus: 60,
+    dropOverrides: {
+      skeleton: [{ templateId: 'shadow_ring', chance: 0.1 }, { templateId: 'cursed_mail', chance: 0.12 }, { templateId: 'angel_wing', chance: 0.08 }],
+      orc:      [{ templateId: 'shadow_ring', chance: 0.09 }, { templateId: 'orc_axe', chance: 0.13 }, { templateId: 'turtle_shell', chance: 0.08 }],
+      zombie:   [{ templateId: 'shadow_ring', chance: 0.11 }, { templateId: 'cursed_mail', chance: 0.13 }, { templateId: 'clock_gear', chance: 0.09 }],
+    },
   },
 ]
 
@@ -290,6 +388,23 @@ export function spawnMonsterInStage(
 export function rollDrops(monster: MonsterTemplate): InventoryItem[] {
   const drops: InventoryItem[] = []
   for (const entry of monster.dropTable) {
+    if (Math.random() < entry.chance) {
+      drops.push({
+        uid:          `${entry.templateId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        templateId:   entry.templateId,
+        enhanceLevel: 0,
+      })
+    }
+  }
+  return drops
+}
+
+
+export function rollDropsForStage(stageId: string, monster: MonsterTemplate): InventoryItem[] {
+  const stage = STAGES.find(s => s.id === stageId)
+  const table = stage?.dropOverrides?.[monster.id] ?? monster.dropTable
+  const drops: InventoryItem[] = []
+  for (const entry of table) {
     if (Math.random() < entry.chance) {
       drops.push({
         uid:          `${entry.templateId}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,

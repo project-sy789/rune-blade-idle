@@ -1,5 +1,5 @@
 // Service Worker for PWA - Rune & Blade: Idle Online
-const CACHE = 'rune-blade-v2-field-roam'
+const CACHE = 'rune-blade-v3-quests-drops'
 const SCOPE_URL = new URL(self.registration.scope)
 const APP_SHELL_URL = new URL('index.html', SCOPE_URL)
 const ICON_URL = new URL('icon.svg', SCOPE_URL)

@@ -6,6 +6,7 @@ import { TabStats }          from './TabStats'
 import { TabInventory }      from './TabInventory'
 import { TabLog }            from './TabLog'
 import { TabMap }            from './TabMap'
+import { TabQuest }          from './TabQuest'
 import { TabLeaderboard }    from './TabLeaderboard'
 import { TabGuild }          from './TabGuild'
 import { TabAchievements }   from './TabAchievements'
@@ -16,6 +17,7 @@ const TABS = [
   { id: 'stats',        label: T.tabStats,     icon: '📊' },
   { id: 'inventory',    label: T.tabInventory, icon: '🎒' },
   { id: 'map',          label: T.tabMap,       icon: '🗺' },
+  { id: 'quest',        label: 'เควส',          icon: '📜' },
   { id: 'achievements', label: 'รางวัล',        icon: '🏅' },
   { id: 'rank',         label: 'อันดับ',         icon: '🏆' },
   { id: 'guild',        label: 'กิลด์',          icon: '⚔️' },
@@ -62,6 +64,7 @@ export function BottomMenu() {
         {active === 'stats'        && <TabStats />}
         {active === 'inventory'    && <TabInventory />}
         {active === 'map'          && <TabMap />}
+        {active === 'quest'        && <TabQuest />}
         {active === 'achievements' && <TabAchievements />}
         {active === 'rank'         && <TabLeaderboard />}
         {active === 'guild'        && <TabGuild />}
