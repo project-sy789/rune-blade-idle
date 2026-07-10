@@ -407,3 +407,114 @@ html, body, #root {
 .rune-map-orc .field-map-art,
 .rune-map-turtle .field-map-art,
 .rune-map-niflheim .field-map-art { animation: mapBreath 7s ease-in-out infinite; }
+
+
+/* ── Open world viewport pass ───────────────────────────────── */
+.open-world-viewport {
+  perspective: 900px;
+  background-size: cover;
+}
+.open-world-camera {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 178%;
+  height: 178%;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+  animation: worldCameraPan 18s ease-in-out infinite;
+}
+@keyframes worldCameraPan {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  20% { transform: translate(-45%, -54%) scale(1.03); }
+  42% { transform: translate(-55%, -47%) scale(1.02); }
+  64% { transform: translate(-47%, -45%) scale(1.04); }
+  82% { transform: translate(-53%, -56%) scale(1.02); }
+}
+.open-world-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  filter: saturate(1.2) contrast(1.08);
+}
+.open-world-object {
+  paint-order: stroke fill;
+  stroke: rgba(0,0,0,0.45);
+  stroke-width: 2px;
+  filter: drop-shadow(0 5px 3px rgba(0,0,0,0.42));
+}
+.open-world-marker {
+  position: absolute;
+  z-index: 16;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.open-world-marker span {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.6);
+  box-shadow: 0 0 14px currentColor;
+}
+.open-world-marker small {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.46);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.76);
+  font-size: 7px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.open-world-marker-town { color: #60a5fa; }
+.open-world-marker-town span { background: #60a5fa; }
+.open-world-marker-dungeon { color: #f87171; }
+.open-world-marker-dungeon span { background: #f87171; }
+.open-world-marker-camp { color: #fbbf24; }
+.open-world-marker-camp span { background: #fbbf24; }
+.open-world-minimap {
+  width: 58px;
+  height: 44px;
+  background:
+    radial-gradient(circle at 28% 30%, rgba(96,165,250,0.26), transparent 12%),
+    radial-gradient(circle at 72% 30%, rgba(248,113,113,0.22), transparent 13%),
+    radial-gradient(circle at 38% 74%, rgba(251,191,36,0.18), transparent 14%),
+    rgba(0,0,0,0.48);
+}
+.open-world-viewport .field-map-art {
+  inset: 8% 10%;
+  width: 80%;
+  height: 80%;
+  opacity: 0.52;
+}
+.open-world-viewport .rune-isometric-tiles {
+  inset: -10%;
+  opacity: 0.28;
+}
+.open-world-viewport .field-path,
+.open-world-viewport .field-river,
+.open-world-viewport .rune-cliff,
+.open-world-viewport .rune-portal,
+.open-world-viewport .mob-camp,
+.open-world-viewport .hero-route,
+.open-world-viewport .route-dot,
+.open-world-viewport .field-prop,
+.open-world-viewport .field-monster,
+.open-world-viewport .field-monster-active,
+.open-world-viewport .field-player {
+  transform-origin: center;
+}
+.open-world-viewport .field-vignette {
+  z-index: 35;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0%, transparent 45%, rgba(0,0,0,0.52) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.2), transparent 28%, rgba(0,0,0,0.28));
+}
+.open-world-viewport .field-player {
+  filter: drop-shadow(0 12px 8px rgba(0,0,0,0.45));
+}

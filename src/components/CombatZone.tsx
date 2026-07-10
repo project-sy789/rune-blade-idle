@@ -7,6 +7,7 @@ import { SkillButton } from './SkillButton'
 import { ParticleCanvas } from './ParticleCanvas'
 import { PixelSprite, classSprite } from './PixelSprite'
 import { FieldMapArt } from './FieldMapArt'
+import { OpenWorldMap } from './OpenWorldMap'
 import { T } from '../constants/translations'
 import {
   GAME_CONFIG,
@@ -139,6 +140,15 @@ function FieldMonster({
   )
 }
 
+function WorldMarker({ x, y, label, tone }: { x: number; y: number; label: string; tone: 'town' | 'dungeon' | 'camp' }) {
+  return (
+    <div className={`open-world-marker open-world-marker-${tone}`} style={{ left: `${x}%`, top: `${y}%` }}>
+      <span />
+      <small>{label}</small>
+    </div>
+  )
+}
+
 export function CombatZone() {
   const player = useGameStore(s => s.player)
   const monster = useGameStore(s => s.monster)
@@ -198,79 +208,86 @@ export function CombatZone() {
         </span>
       </div>
 
-      <div className={`relative z-10 flex-1 min-h-[190px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${stageTone} ${mapStyle} shadow-2xl shadow-black/30`}> 
-        <div className="rune-sky-glow" />
-        <div className="field-biome" />
-        <FieldMapArt stageId={currentStageId} />
-        <div className="rune-isometric-tiles" />
-        <div className="rune-tile-highlights" />
-        <div className="field-grid" />
-        <div className="field-path field-path-a" />
-        <div className="field-path field-path-b" />
-        <div className="field-path field-path-c" />
-        <div className="field-river" />
-        <div className="rune-cliff rune-cliff-a" />
-        <div className="rune-cliff rune-cliff-b" />
-        <div className="rune-portal" />
-        <div className="rune-minimap">
+      <div className={`relative z-10 flex-1 min-h-[190px] overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${stageTone} ${mapStyle} open-world-viewport shadow-2xl shadow-black/30`}> 
+        <div className="open-world-camera">
+          <OpenWorldMap stageId={currentStageId} />
+          <div className="rune-sky-glow" />
+          <div className="field-biome" />
+          <FieldMapArt stageId={currentStageId} />
+          <div className="rune-isometric-tiles" />
+          <div className="rune-tile-highlights" />
+          <div className="field-grid" />
+          <div className="field-path field-path-a" />
+          <div className="field-path field-path-b" />
+          <div className="field-path field-path-c" />
+          <div className="field-river" />
+          <div className="rune-cliff rune-cliff-a" />
+          <div className="rune-cliff rune-cliff-b" />
+          <div className="rune-portal" />
+
+          <WorldMarker x={18} y={18} label="เมือง" tone="town" />
+          <WorldMarker x={78} y={25} label="ดันเจี้ยน" tone="dungeon" />
+          <WorldMarker x={22} y={75} label="จุดฟาร์ม" tone="camp" />
+          <WorldMarker x={72} y={72} label="บอส" tone="dungeon" />
+
+          {[1, 2, 3, 4].map(group => (
+            <div key={group} className={`mob-camp mob-camp-${group}`}>
+              <span>{GROUP_LABELS[group]}</span>
+            </div>
+          ))}
+
+          <div className="hero-route" />
+          <div className="route-dot route-dot-a" />
+          <div className="route-dot route-dot-b" />
+          <div className="route-dot route-dot-c" />
+
+          {props.map((prop, index) => (
+            <span
+              key={`${prop.icon}-${index}`}
+              className="field-prop"
+              style={{ left: `${prop.x}%`, top: `${prop.y}%`, fontSize: prop.size ? `${prop.size}px` : undefined, opacity: prop.opacity ?? undefined }}
+            >
+              {prop.icon}
+            </span>
+          ))}
+
+          {swarm.map((mob, index) => (
+            <FieldMonster
+              key={mob.uid ?? `${mob.template.id}-${index}`}
+              id={mob.template.id}
+              name={mob.template.name}
+              x={mob.isBoss && index === 0 ? 50 : mob.x}
+              y={mob.isBoss && index === 0 ? 28 : mob.y}
+              scale={mob.isBoss && index === 0 ? 1.15 : mob.scale}
+              delay={SWARM_DELAYS[index % SWARM_DELAYS.length]}
+              active={index === 0}
+              boss={mob.isBoss && index === 0}
+              hp={index === 0 ? mob.currentHp : undefined}
+              maxHp={index === 0 ? mob.maxHp : undefined}
+              group={mob.group}
+              pathVariant={mob.pathVariant}
+            />
+          ))}
+
+          <div className="absolute left-1/2 top-[54%] -translate-x-1/2 -translate-y-1/2 field-player field-player-roam">
+            <div className="player-aura" />
+            <PixelSprite id={classSprite(player.classId)} size={62} animate={isAuto ? 'attack' : 'idle'} />
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-24">
+              <p className="text-[9px] text-center text-blue-100 font-bold truncate">{player.name}</p>
+              <div className="h-1.5 rounded-full bg-black/70 overflow-hidden border border-blue-900/40">
+                <div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-300 bar-fill" style={{ width: `${playerHp}%` }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rune-minimap open-world-minimap">
           <span className="mini-player" />
           <span className="mini-mob mini-mob-a" />
           <span className="mini-mob mini-mob-b" />
           <span className="mini-mob mini-mob-c" />
         </div>
         <div className="field-vignette" />
-
-        {[1, 2, 3, 4].map(group => (
-          <div key={group} className={`mob-camp mob-camp-${group}`}>
-            <span>{GROUP_LABELS[group]}</span>
-          </div>
-        ))}
-
-        <div className="hero-route" />
-        <div className="route-dot route-dot-a" />
-        <div className="route-dot route-dot-b" />
-        <div className="route-dot route-dot-c" />
-
-        {props.map((prop, index) => (
-          <span
-            key={`${prop.icon}-${index}`}
-            className="field-prop"
-            style={{ left: `${prop.x}%`, top: `${prop.y}%`, fontSize: prop.size ? `${prop.size}px` : undefined, opacity: prop.opacity ?? undefined }}
-          >
-            {prop.icon}
-          </span>
-        ))}
-
-        {/* swarm monsters */}
-        {swarm.map((mob, index) => (
-          <FieldMonster
-            key={mob.uid ?? `${mob.template.id}-${index}`}
-            id={mob.template.id}
-            name={mob.template.name}
-            x={mob.isBoss && index === 0 ? 50 : mob.x}
-            y={mob.isBoss && index === 0 ? 28 : mob.y}
-            scale={mob.isBoss && index === 0 ? 1.15 : mob.scale}
-            delay={SWARM_DELAYS[index % SWARM_DELAYS.length]}
-            active={index === 0}
-            boss={mob.isBoss && index === 0}
-            hp={index === 0 ? mob.currentHp : undefined}
-            maxHp={index === 0 ? mob.maxHp : undefined}
-            group={mob.group}
-            pathVariant={mob.pathVariant}
-          />
-        ))}
-
-        {/* player */}
-        <div className="absolute z-20 left-1/2 top-[54%] -translate-x-1/2 -translate-y-1/2 field-player field-player-roam">
-          <div className="player-aura" />
-          <PixelSprite id={classSprite(player.classId)} size={62} animate={isAuto ? 'attack' : 'idle'} />
-          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-24">
-            <p className="text-[9px] text-center text-blue-100 font-bold truncate">{player.name}</p>
-            <div className="h-1.5 rounded-full bg-black/70 overflow-hidden border border-blue-900/40">
-              <div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-300 bar-fill" style={{ width: `${playerHp}%` }} />
-            </div>
-          </div>
-        </div>
 
         <FloatingNumbers />
       </div>
